@@ -39,14 +39,19 @@ class DatabaseSeeder extends Seeder
             */
             InstallmentPlanSeeder::class,
 
+
             /*
             |--------------------------------------------------------------------------
             | Reports Demo
             |--------------------------------------------------------------------------
             */
+
+            
+  WarehouseSeeder::class,
+            ShopSeeder::class,
+            StockSeeder::class,
+
             ReportDemoSeeder::class,
-
-
 
         ]);
     }

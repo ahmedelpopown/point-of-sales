@@ -151,7 +151,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'view stock',
             'adjust stock',
-
+'transfer stock',
+'view stock movements',
             'view reports',
         ]);
 

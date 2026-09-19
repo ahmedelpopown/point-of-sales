@@ -16,14 +16,16 @@ class Product extends Model
     {
         return $this->hasMany(Stock::class);
     }
-public function getCurrentQuantityAttribute($value): int
-{
-    if (array_key_exists('current_quantity', $this->attributes)) {
-        return (int) $value;
-    }
+    public function getCurrentQuantityAttribute($value): int
+    {
+        $stocksSum = $this->stocks()->sum('quantity');
 
-    return (int) $this->stocks()->sum('quantity');
-}
+        if ($stocksSum > 0 || $this->stocks()->exists()) {
+            return (int) $stocksSum;
+        }
+
+        return (int) ($value ?? 0);
+    }
     public function orderItems(): HasMany
     {
         return $this->hasMany(OrderItem::class);

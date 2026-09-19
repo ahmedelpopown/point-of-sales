@@ -10,9 +10,10 @@ return new class extends Migration
     {
         Schema::table('purchases', function (Blueprint $table) {
             $table->foreignId('warehouse_id')
+                ->nullable()
                 ->after('employee_id')
                 ->constrained()
-                ->restrictOnDelete();
+                ->nullOnDelete();
         });
     }
 

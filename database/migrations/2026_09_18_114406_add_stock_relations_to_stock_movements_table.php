@@ -8,31 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('stock_movements', function (Blueprint $table) {
-
-            $table->foreignId('stock_id')
-                ->after('product_id')
-                ->constrained('stocks')
-                ->restrictOnDelete();
-
-            $table->foreignId('related_stock_id')
-                ->nullable()
-                ->after('stock_id')
-                ->constrained('stocks')
-                ->nullOnDelete();
-        });
+        // Superseded by 2026_09_18_122029_add_stock_ids_to_stock_movements_table
     }
 
     public function down(): void
     {
-        Schema::table('stock_movements', function (Blueprint $table) {
-            $table->dropForeign(['stock_id']);
-            $table->dropForeign(['related_stock_id']);
-
-            $table->dropColumn([
-                'stock_id',
-                'related_stock_id',
-            ]);
-        });
     }
 };

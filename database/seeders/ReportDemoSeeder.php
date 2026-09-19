@@ -6,9 +6,10 @@ use App\Models\Employee;
 use App\Models\Installment;
 use App\Models\InstallmentPlan;
 use App\Models\Product;
-use App\Models\Purchase;
+use App\Models\Shop;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Models\Warehouse;
 use App\Services\InstallmentService;
 use App\Services\OrderService;
 use App\Services\PurchaseService;
@@ -31,6 +32,14 @@ class ReportDemoSeeder extends Seeder
             ->where('status', 'active')
             ->get();
 
+        $warehouses = Warehouse::query()
+            ->where('status', 'active')
+            ->get();
+
+        $shops = Shop::query()
+            ->where('status', 'active')
+            ->get();
+
         $suppliers = Supplier::query()->get();
 
         $products = Product::query()
@@ -48,6 +57,18 @@ class ReportDemoSeeder extends Seeder
         if ($employees->isEmpty()) {
             throw new \RuntimeException(
                 'No active employees found.'
+            );
+        }
+
+        if ($warehouses->isEmpty()) {
+            throw new \RuntimeException(
+                'No active warehouses found.'
+            );
+        }
+
+        if ($shops->isEmpty()) {
+            throw new \RuntimeException(
+                'No active shops found.'
             );
         }
 
@@ -86,12 +107,13 @@ class ReportDemoSeeder extends Seeder
         | 1. PURCHASES
         |--------------------------------------------------------------------------
         |
-        | Generate purchases first.
-        | This gives products realistic purchase costs.
+        | Purchases are created against warehouses.
+        | The PurchaseService is responsible for updating stock.
         |
         */
 
         $purchaseCount = 80;
+        $createdPurchases = 0;
 
         for ($i = 1; $i <= $purchaseCount; $i++) {
 
@@ -115,7 +137,11 @@ class ReportDemoSeeder extends Seeder
                  */
                 $unitPrice = round(
                     (float) $product->price
-                    * fake()->randomFloat(2, 0.55, 0.80),
+                    * fake()->randomFloat(
+                        2,
+                        0.55,
+                        0.80
+                    ),
                     2
                 );
 
@@ -129,7 +155,7 @@ class ReportDemoSeeder extends Seeder
             $purchase = $purchaseService->create(
                 supplierId: $suppliers->random()->id,
                 employeeId: $employees->random()->id,
-                warehouseId:$warehouseId->random()->id,
+                warehouseId: $warehouses->random()->id,
                 items: $items,
             );
 
@@ -137,7 +163,9 @@ class ReportDemoSeeder extends Seeder
              * Put purchase somewhere in the last 90 days.
              */
             $purchaseDate = Carbon::now()
-                ->subDays(fake()->numberBetween(0, 89))
+                ->subDays(
+                    fake()->numberBetween(0, 89)
+                )
                 ->setTime(
                     fake()->numberBetween(8, 20),
                     fake()->numberBetween(0, 59)
@@ -147,30 +175,80 @@ class ReportDemoSeeder extends Seeder
                 'created_at' => $purchaseDate,
                 'updated_at' => $purchaseDate,
             ])->saveQuietly();
+
+            $createdPurchases++;
         }
 
         $this->command->info(
-            "{$purchaseCount} purchases created."
+            "{$createdPurchases} purchases created."
         );
 
         /*
         |--------------------------------------------------------------------------
         | 2. ORDERS
         |--------------------------------------------------------------------------
+        |
+        | Orders belong to shops.
+        |
+        | IMPORTANT:
+        | We only select products that have available stock
+        | in the selected shop.
+        |
         */
 
         $orderCount = 200;
+        $createdOrders = 0;
 
         for ($i = 1; $i <= $orderCount; $i++) {
 
+            /*
+             * Every order is assigned to one shop.
+             */
+            $shop = $shops->random();
+
+            /*
+             * Get products that actually have stock
+             * in this specific shop.
+             */
             $availableProducts = Product::query()
                 ->where('status', 'active')
-                ->withSum('stocks as current_quantity', 'quantity')
+                ->whereHas('stocks', function ($query) use ($shop) {
+                    $query
+                        ->where(
+                            'stockable_type',
+                            Shop::class
+                        )
+                        ->where(
+                            'stockable_id',
+                            $shop->id
+                        )
+                        ->where(
+                            'quantity',
+                            '>',
+                            0
+                        );
+                })
+                ->with([
+                    'stocks' => function ($query) use ($shop) {
+                        $query
+                            ->where(
+                                'stockable_type',
+                                Shop::class
+                            )
+                            ->where(
+                                'stockable_id',
+                                $shop->id
+                            );
+                    },
+                ])
                 ->inRandomOrder()
                 ->get();
 
+            /*
+             * Nothing available in this shop.
+             */
             if ($availableProducts->isEmpty()) {
-                break;
+                continue;
             }
 
             $selectedProducts = $availableProducts
@@ -185,25 +263,28 @@ class ReportDemoSeeder extends Seeder
 
             foreach ($selectedProducts as $product) {
 
-                $maxQuantity = min(
-                    8,
-                    (int) $product->current_quantity
-                );
+                /*
+                 * This is the stock of THIS product
+                 * in THIS selected shop.
+                 */
+                $stock = $product->stocks->first();
 
-                if ($maxQuantity < 1) {
+                if (! $stock || $stock->quantity < 1) {
                     continue;
                 }
 
+                /*
+                 * Never request more than the actual
+                 * quantity available in the shop.
+                 */
                 $quantity = fake()->numberBetween(
                     1,
-                    $maxQuantity
+                    min(8, $stock->quantity)
                 );
 
-                /*
-                 * Product price is the selling price.
-                 */
                 $items[] = [
                     'product_id' => $product->id,
+                    'shop_id' => $shop->id,
                     'quantity' => $quantity,
                     'price' => (float) $product->price,
                 ];
@@ -220,7 +301,6 @@ class ReportDemoSeeder extends Seeder
             $order = $orderService->create(
                 userId: $customer->id,
                 employeeId: $employee->id,
-                warehouseId: $warehouse->id,
                 items: $items,
             );
 
@@ -228,7 +308,9 @@ class ReportDemoSeeder extends Seeder
              * Historical date.
              */
             $orderDate = Carbon::now()
-                ->subDays(fake()->numberBetween(0, 89))
+                ->subDays(
+                    fake()->numberBetween(0, 89)
+                )
                 ->setTime(
                     fake()->numberBetween(9, 21),
                     fake()->numberBetween(0, 59)
@@ -238,10 +320,12 @@ class ReportDemoSeeder extends Seeder
                 'created_at' => $orderDate,
                 'updated_at' => $orderDate,
             ])->saveQuietly();
+
+            $createdOrders++;
         }
 
         $this->command->info(
-            "{$orderCount} orders created."
+            "{$createdOrders} orders created."
         );
 
         /*
@@ -273,7 +357,11 @@ class ReportDemoSeeder extends Seeder
              */
             $downPayment = round(
                 $orderTotal
-                * fake()->randomFloat(2, 0.10, 0.30),
+                * fake()->randomFloat(
+                    2,
+                    0.10,
+                    0.30
+                ),
                 2
             );
 
@@ -333,8 +421,8 @@ class ReportDemoSeeder extends Seeder
                     }
 
                     /*
-                     * Payment between 10% and 35% of
-                     * the current remaining amount.
+                     * Payment between 10% and 35%
+                     * of the current remaining amount.
                      */
                     $percentage =
                         fake()->randomFloat(
@@ -350,7 +438,10 @@ class ReportDemoSeeder extends Seeder
 
                     $amount = max(
                         1,
-                        min($amount, $remaining)
+                        min(
+                            $amount,
+                            $remaining
+                        )
                     );
 
                     /*
@@ -414,6 +505,22 @@ class ReportDemoSeeder extends Seeder
 
         $this->command->info(
             'REPORT DEMO DATA CREATED SUCCESSFULLY ✅'
+        );
+
+        $this->command->info(
+            "Purchases: {$createdPurchases}"
+        );
+
+        $this->command->info(
+            "Orders: {$createdOrders}"
+        );
+
+        $this->command->info(
+            "Installments: {$installmentCount}"
+        );
+
+        $this->command->info(
+            "Payments: {$paymentCount}"
         );
 
         $this->command->info(

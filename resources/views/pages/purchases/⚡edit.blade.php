@@ -4,6 +4,7 @@ use App\Models\Employee;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
+use App\Models\Warehouse;
 use App\Services\PurchaseService;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -16,9 +17,13 @@ new #[Title('Edit Purchase')] class extends Component
 
     public $employee_id = '';
 
+    public $warehouse_id = '';
+
     public $suppliers = [];
 
     public $employees = [];
+
+    public $warehouses = [];
 
     public $products = [];
 
@@ -32,12 +37,20 @@ new #[Title('Edit Purchase')] class extends Component
 
         $this->employee_id = $purchase->employee_id;
 
+        $this->warehouse_id = $purchase->warehouse_id ?? '';
+
         $this->suppliers = Supplier::query()
             ->orderBy('name')
             ->get();
 
         $this->employees = Employee::query()
             ->orderBy('first_name')
+            ->get();
+
+        $this->warehouses = Warehouse::query()
+            ->where('status', 'active')
+            ->orWhere('id', $purchase->warehouse_id)
+            ->orderBy('name')
             ->get();
 
         $this->products = Product::query()
@@ -111,6 +124,11 @@ new #[Title('Edit Purchase')] class extends Component
                 'exists:employees,id',
             ],
 
+            'warehouse_id' => [
+                'required',
+                'exists:warehouses,id',
+            ],
+
             'items' => [
                 'required',
                 'array',
@@ -142,6 +160,7 @@ new #[Title('Edit Purchase')] class extends Component
                 purchase: $this->purchase,
                 supplierId: (int) $this->supplier_id,
                 employeeId: (int) $this->employee_id,
+                warehouseId: (int) $this->warehouse_id,
                 items: $this->items,
             );
 
@@ -204,7 +223,7 @@ new #[Title('Edit Purchase')] class extends Component
                         Purchase Information
                     </h3>
 
-                    <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
 
                         {{-- Supplier --}}
                         <div>
@@ -233,6 +252,40 @@ new #[Title('Edit Purchase')] class extends Component
                             </select>
 
                             @error('supplier_id')
+                                <p class="mt-1 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
+                            @enderror
+
+                        </div>
+
+                        {{-- Warehouse --}}
+                        <div>
+
+                            <label class="block text-sm font-medium text-gray-700">
+                                Warehouse
+                            </label>
+
+                            <select
+                                wire:model="warehouse_id"
+                                class="mt-1 block w-full rounded-lg border-gray-300"
+                            >
+
+                                <option value="">
+                                    Select Warehouse
+                                </option>
+
+                                @foreach($warehouses as $warehouse)
+
+                                    <option value="{{ $warehouse->id }}">
+                                        {{ $warehouse->name }}
+                                    </option>
+
+                                @endforeach
+
+                            </select>
+
+                            @error('warehouse_id')
                                 <p class="mt-1 text-sm text-red-600">
                                     {{ $message }}
                                 </p>

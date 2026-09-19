@@ -3,6 +3,7 @@
 use App\Livewire\Forms\OrderForm;
 use App\Models\Employee;
 use App\Models\Product;
+use App\Models\Shop;
 use App\Models\User;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -15,6 +16,8 @@ new #[Title('Create Order')] class extends Component
 
     public $employees = [];
 
+    public $shops = [];
+
     public $products = [];
 
     public function mount()
@@ -25,6 +28,11 @@ new #[Title('Create Order')] class extends Component
 
         $this->employees = Employee::query()
             ->orderBy('first_name')
+            ->get();
+
+        $this->shops = Shop::query()
+            ->where('status', 'active')
+            ->orderBy('name')
             ->get();
 
         $this->products = Product::query()
@@ -205,7 +213,7 @@ new #[Title('Create Order')] class extends Component
                                 <div class="grid grid-cols-1 gap-4 md:grid-cols-12">
 
                                     {{-- Product --}}
-                                    <div class="md:col-span-5">
+                                    <div class="md:col-span-4">
 
                                         <label class="block text-sm font-medium">
                                             Product
@@ -224,9 +232,6 @@ new #[Title('Create Order')] class extends Component
 
                                                 <option value="{{ $product->id }}">
                                                     {{ $product->name }}
-                                                    -
-                                                    {{ $product->current_quantity }}
-                                                    in stock
                                                 </option>
 
                                             @endforeach
@@ -241,8 +246,42 @@ new #[Title('Create Order')] class extends Component
 
                                     </div>
 
+                                    {{-- Shop --}}
+                                    <div class="md:col-span-3">
+
+                                        <label class="block text-sm font-medium">
+                                            Shop
+                                        </label>
+
+                                        <select
+                                            wire:model="form.items.{{ $index }}.shop_id"
+                                            class="mt-1 block w-full rounded-lg border-gray-300"
+                                        >
+
+                                            <option value="">
+                                                Select Shop
+                                            </option>
+
+                                            @foreach($shops as $shop)
+
+                                                <option value="{{ $shop->id }}">
+                                                    {{ $shop->name }}
+                                                </option>
+
+                                            @endforeach
+
+                                        </select>
+
+                                        @error("form.items.$index.shop_id")
+                                            <p class="mt-1 text-sm text-red-600">
+                                                {{ $message }}
+                                            </p>
+                                        @enderror
+
+                                    </div>
+
                                     {{-- Quantity --}}
-                                    <div class="md:col-span-2">
+                                    <div class="md:col-span-1">
 
                                         <label class="block text-sm font-medium">
                                             Quantity

@@ -20,9 +20,13 @@ class Purchase extends Model
 
     ];
 
-    protected $casts = [
-        'total_price' => 'decimal:2',
-    ];
+    protected function casts(): array
+    {
+        return [
+            'total_price' => 'decimal:2',
+            'stock_applied_at' => 'datetime',
+        ];
+    }
 
     public function supplier()
     {

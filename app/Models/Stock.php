@@ -40,6 +40,11 @@ class Stock extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
     public function isLowStock(): bool
     {
         return $this->quantity <= $this->minimum_quantity;

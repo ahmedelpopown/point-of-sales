@@ -16,17 +16,15 @@ class Order extends Model
         'user_id',
         'employee_id',
         'stock_applied_at',
-         'shop_id',
     ];
 
-    protected $casts = [
-        'total' => 'decimal:2',
-    ];
-
-    public function shop()
-{
-    return $this->belongsTo(Shop::class);
-}
+    protected function casts(): array
+    {
+        return [
+            'total' => 'decimal:2',
+            'stock_applied_at' => 'datetime',
+        ];
+    }
 
     public function user()
     {

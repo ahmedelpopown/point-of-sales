@@ -12,6 +12,7 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Illuminate\Support\Facades\Log;
+use Maatwebsite\Excel\Excel;
 use Maatwebsite\Excel\Validators\ValidationException;
 
 
@@ -291,7 +292,7 @@ public function import()
             ];
         }
 
-        dd($errors);
+       
 
     } catch (\Throwable $th) {
 

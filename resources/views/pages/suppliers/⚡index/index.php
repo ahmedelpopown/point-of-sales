@@ -308,7 +308,7 @@ public function suppliers()
                 ];
             }
 
-            dd($errors);
+ 
 
         } catch (\Throwable $th) {
 

@@ -359,4 +359,45 @@ Route::middleware('auth:employee')->group(function () {
         ->middleware('permission:adjust stock')
         ->name('stock.adjust');
 
+
+
+
+Route::livewire('/stock', 'pages::stock.index')
+    ->middleware('permission:adjust stock')
+    ->name('stock.index');
+
+
+
+
+
+Route::livewire('/stock/warehouses', 'pages::stock.warehouses')
+    ->middleware('permission:adjust stock')
+    ->name('stock.warehouses');
+
+
+
+
+
+    Route::livewire('/stock/shops', 'pages::stock.shops')
+    ->middleware('permission:adjust stock')
+    ->name('stock.shops');
+ 
+
+
+
+
+        Route::livewire('/stock/movements', 'pages::stock.movements')
+    ->middleware('permission:adjust stock')
+    ->name('stock.movements');
+
+
+
+
+        Route::livewire('/stock/transfers', 'pages::stock.transfers')
+    ->middleware('permission:adjust stock')
+    ->name('stock.transfers');
+ 
+ 
+ 
+
 });

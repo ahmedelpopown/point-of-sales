@@ -8,15 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->dropColumn('current_quantity');
-        });
+        // Retain products.current_quantity temporarily for legacy compatibility and data safety
     }
 
     public function down(): void
     {
-        Schema::table('products', function (Blueprint $table) {
-            $table->integer('current_quantity')->default(0);
-        });
     }
 };

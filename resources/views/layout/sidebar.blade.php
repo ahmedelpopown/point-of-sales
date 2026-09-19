@@ -7,8 +7,7 @@
             src="{{ asset('dist/img/AdminLTELogo.png') }}"
             alt="POS Logo"
             class="brand-image img-circle elevation-3"
-            style="opacity: .9"
-        >
+            style="opacity: .9">
 
         <span class="brand-text font-weight-light">
             Point Of Sales
@@ -25,8 +24,7 @@
                 <img
                     src="{{ asset('dist/img/user2-160x160.jpg') }}"
                     class="img-circle elevation-2"
-                    alt="Employee"
-                >
+                    alt="Employee">
             </div>
 
             <div class="info">
@@ -36,13 +34,13 @@
                 </a>
 
                 @if(auth()->guard('employee')->check())
-                    <small class="text-white-50">
-                        {{ auth()->guard('employee')->user()->getRoleNames()->first() ?? 'Employee' }}
-                    </small>
+                <small class="text-white-50">
+                    {{ auth()->guard('employee')->user()->getRoleNames()->first() ?? 'Employee' }}
+                </small>
                 @endif
 
             </div>
-     
+
 
         </div>
 
@@ -50,15 +48,13 @@
         <div class="form-inline mb-2">
             <div
                 class="input-group"
-                data-widget="sidebar-search"
-            >
+                data-widget="sidebar-search">
 
                 <input
                     class="form-control form-control-sidebar"
                     type="search"
                     placeholder="Search"
-                    aria-label="Search"
-                >
+                    aria-label="Search">
 
                 <div class="input-group-append">
 
@@ -78,8 +74,7 @@
                 class="nav nav-pills nav-sidebar flex-column"
                 data-widget="treeview"
                 role="menu"
-                data-accordion="false"
-            >
+                data-accordion="false">
 
                 {{-- ===================================================== --}}
                 {{-- Dashboard --}}
@@ -87,191 +82,182 @@
 
                 @can('view dashboard')
 
-                    <li class="nav-item">
+                <li class="nav-item">
 
-                        <a
-                            href="{{ route('dashboard') }}"
-                            class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="{{ route('dashboard') }}"
+                        class="nav-link {{ request()->routeIs('dashboard') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                        <i class="nav-icon fas fa-tachometer-alt"></i>
 
-                            <p>
-                                Dashboard
-                            </p>
+                        <p>
+                            Dashboard
+                        </p>
 
-                        </a>
+                    </a>
 
-                    </li>
+                </li>
 
                 @endcan
 
-                       @canany([
-                    'view roles',
-                    'create roles',
-                    'update roles',
-                    'delete roles'
+                @canany([
+                'view roles',
+                'create roles',
+                'update roles',
+                'delete roles'
                 ])
 
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('roles.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('roles.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-box"></i>
+                        <i class="nav-icon fas fa-box"></i>
 
-                            <p>
-                                Roles
+                        <p>
+                            Roles
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            {{-- All Products --}}
+                        {{-- All Products --}}
 
-                            @can('view roles')
+                        @can('view roles')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('admin.roles') }}"
-                                        class="nav-link {{ request()->routeIs('admin.roles') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('admin.roles') }}"
+                                class="nav-link {{ request()->routeIs('admin.roles') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Roles
-                                        </p>
+                                <p>
+                                    All Roles
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            {{-- Create Product --}}
+                        {{-- Create Product --}}
 
-                            @can('create role')
+                        @can('create role')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('admin.roles.permissions') }}"
-                                        class="nav-link {{ request()->routeIs('admin.roles.permissions') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('admin.roles.permissions') }}"
+                                class="nav-link {{ request()->routeIs('admin.roles.permissions') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Roles
-                                        </p>
+                                <p>
+                                    Create Roles
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
-                  @endcanany
+                @endcanany
 
                 {{-- ===================================================== --}}
                 {{-- Products --}}
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view products',
-                    'create products',
-                    'update products',
-                    'delete products'
+                'view products',
+                'create products',
+                'update products',
+                'delete products'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('products.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('products.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-box"></i>
+                        <i class="nav-icon fas fa-box"></i>
 
-                            <p>
-                                Products
+                        <p>
+                            Products
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            {{-- All Products --}}
+                        {{-- All Products --}}
 
-                            @can('view products')
+                        @can('view products')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('products.index') }}"
-                                        class="nav-link {{ request()->routeIs('products.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('products.index') }}"
+                                class="nav-link {{ request()->routeIs('products.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Products
-                                        </p>
+                                <p>
+                                    All Products
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            {{-- Create Product --}}
+                        {{-- Create Product --}}
 
-                            @can('create products')
+                        @can('create products')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('products.create') }}"
-                                        class="nav-link {{ request()->routeIs('products.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('products.create') }}"
+                                class="nav-link {{ request()->routeIs('products.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Product
-                                        </p>
+                                <p>
+                                    Create Product
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -281,80 +267,76 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view users',
-                    'create users',
-                    'update users',
-                    'delete users'
+                'view users',
+                'create users',
+                'update users',
+                'delete users'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('users.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('users.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-users"></i>
+                        <i class="nav-icon fas fa-users"></i>
 
-                            <p>
-                                Users
+                        <p>
+                            Users
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            @can('view users')
+                        @can('view users')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('users.index') }}"
-                                        class="nav-link {{ request()->routeIs('users.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('users.index') }}"
+                                class="nav-link {{ request()->routeIs('users.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Users
-                                        </p>
+                                <p>
+                                    All Users
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            @can('create users')
+                        @can('create users')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('users.create') }}"
-                                        class="nav-link {{ request()->routeIs('users.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('users.create') }}"
+                                class="nav-link {{ request()->routeIs('users.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create User
-                                        </p>
+                                <p>
+                                    Create User
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -364,80 +346,76 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view employees',
-                    'create employees',
-                    'update employees',
-                    'delete employees'
+                'view employees',
+                'create employees',
+                'update employees',
+                'delete employees'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('employees.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('employees.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('employees.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('employees.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-user-tie"></i>
+                        <i class="nav-icon fas fa-user-tie"></i>
 
-                            <p>
-                                Employees
+                        <p>
+                            Employees
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            @can('view employees')
+                        @can('view employees')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('employees.index') }}"
-                                        class="nav-link {{ request()->routeIs('employees.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('employees.index') }}"
+                                class="nav-link {{ request()->routeIs('employees.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Employees
-                                        </p>
+                                <p>
+                                    All Employees
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            @can('create employees')
+                        @can('create employees')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('employees.create') }}"
-                                        class="nav-link {{ request()->routeIs('employees.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('employees.create') }}"
+                                class="nav-link {{ request()->routeIs('employees.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Employee
-                                        </p>
+                                <p>
+                                    Create Employee
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -447,80 +425,76 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view suppliers',
-                    'create suppliers',
-                    'update suppliers',
-                    'delete suppliers'
+                'view suppliers',
+                'create suppliers',
+                'update suppliers',
+                'delete suppliers'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('suppliers.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('suppliers.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('suppliers.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-truck"></i>
+                        <i class="nav-icon fas fa-truck"></i>
 
-                            <p>
-                                Suppliers
+                        <p>
+                            Suppliers
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            @can('view suppliers')
+                        @can('view suppliers')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('suppliers.index') }}"
-                                        class="nav-link {{ request()->routeIs('suppliers.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('suppliers.index') }}"
+                                class="nav-link {{ request()->routeIs('suppliers.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Suppliers
-                                        </p>
+                                <p>
+                                    All Suppliers
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            @can('create suppliers')
+                        @can('create suppliers')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('suppliers.create') }}"
-                                        class="nav-link {{ request()->routeIs('suppliers.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('suppliers.create') }}"
+                                class="nav-link {{ request()->routeIs('suppliers.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Supplier
-                                        </p>
+                                <p>
+                                    Create Supplier
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -530,80 +504,76 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view purchases',
-                    'create purchases',
-                    'update purchases',
-                    'delete purchases'
+                'view purchases',
+                'create purchases',
+                'update purchases',
+                'delete purchases'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('purchases.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('purchases.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('purchases.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('purchases.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-shopping-cart"></i>
+                        <i class="nav-icon fas fa-shopping-cart"></i>
 
-                            <p>
-                                Purchases
+                        <p>
+                            Purchases
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            @can('view purchases')
+                        @can('view purchases')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('purchases.index') }}"
-                                        class="nav-link {{ request()->routeIs('purchases.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('purchases.index') }}"
+                                class="nav-link {{ request()->routeIs('purchases.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Purchases
-                                        </p>
+                                <p>
+                                    All Purchases
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            @can('create purchases')
+                        @can('create purchases')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('purchases.create') }}"
-                                        class="nav-link {{ request()->routeIs('purchases.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('purchases.create') }}"
+                                class="nav-link {{ request()->routeIs('purchases.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Purchase
-                                        </p>
+                                <p>
+                                    Create Purchase
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -613,80 +583,76 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view orders',
-                    'create orders',
-                    'update orders',
-                    'delete orders'
+                'view orders',
+                'create orders',
+                'update orders',
+                'delete orders'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('orders.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('orders.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('orders.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-file-invoice"></i>
+                        <i class="nav-icon fas fa-file-invoice"></i>
 
-                            <p>
-                                Orders
+                        <p>
+                            Orders
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            @can('view orders')
+                        @can('view orders')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('orders.index') }}"
-                                        class="nav-link {{ request()->routeIs('orders.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('orders.index') }}"
+                                class="nav-link {{ request()->routeIs('orders.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Orders
-                                        </p>
+                                <p>
+                                    All Orders
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            @can('create orders')
+                        @can('create orders')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('orders.create') }}"
-                                        class="nav-link {{ request()->routeIs('orders.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('orders.create') }}"
+                                class="nav-link {{ request()->routeIs('orders.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Order
-                                        </p>
+                                <p>
+                                    Create Order
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -696,80 +662,76 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                    'view installments',
-                    'create installments',
-                    'update installments',
-                    'delete installments'
+                'view installments',
+                'create installments',
+                'update installments',
+                'delete installments'
                 ])
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('installments.*') ? 'menu-open' : '' }}"
-                    >
+                <li
+                    class="nav-item
+                        {{ request()->routeIs('installments.*') ? 'menu-open' : '' }}">
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('installments.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="#"
+                        class="nav-link {{ request()->routeIs('installments.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-money-check-alt"></i>
+                        <i class="nav-icon fas fa-money-check-alt"></i>
 
-                            <p>
-                                Installments
+                        <p>
+                            Installments
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                            <i class="right fas fa-angle-left"></i>
+                        </p>
 
-                        </a>
+                    </a>
 
-                        <ul class="nav nav-treeview">
+                    <ul class="nav nav-treeview">
 
-                            @can('view installments')
+                        @can('view installments')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('installments.index') }}"
-                                        class="nav-link {{ request()->routeIs('installments.index') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('installments.index') }}"
+                                class="nav-link {{ request()->routeIs('installments.index') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            All Installments
-                                        </p>
+                                <p>
+                                    All Installments
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
 
-                            @can('create installments')
+                        @can('create installments')
 
-                                <li class="nav-item">
+                        <li class="nav-item">
 
-                                    <a
-                                        href="{{ route('installments.create') }}"
-                                        class="nav-link {{ request()->routeIs('installments.create') ? 'active' : '' }}"
-                                    >
+                            <a
+                                href="{{ route('installments.create') }}"
+                                class="nav-link {{ request()->routeIs('installments.create') ? 'active' : '' }}">
 
-                                        <i class="far fa-circle nav-icon"></i>
+                                <i class="far fa-circle nav-icon"></i>
 
-                                        <p>
-                                            Create Installment
-                                        </p>
+                                <p>
+                                    Create Installment
+                                </p>
 
-                                    </a>
+                            </a>
 
-                                </li>
+                        </li>
 
-                            @endcan
+                        @endcan
 
-                        </ul>
+                    </ul>
 
-                    </li>
+                </li>
 
                 @endcanany
 
@@ -777,84 +739,195 @@
                 {{-- ===================================================== --}}
                 {{-- Stock --}}
                 {{-- ===================================================== --}}
+         
+@can('adjust stock')
 
-                @canany([
-                    'view stock',
-                    'adjust stock'
-                ])
+    <li
+        class="nav-item
+        {{ request()->routeIs('stock.*') ? 'menu-open' : '' }}"
+    >
 
-                    <li
-                        class="nav-item
-                        {{ request()->routeIs('stock.*') ? 'menu-open' : '' }}"
+        <a
+            href="#"
+            class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}"
+        >
+
+            <i class="nav-icon fas fa-boxes"></i>
+
+            <p>
+                Stock
+                <i class="right fas fa-angle-left"></i>
+            </p>
+
+        </a>
+
+        <ul class="nav nav-treeview">
+
+            {{-- Stock Overview --}}
+            <li class="nav-item">
+
+                <a
+                    href="{{ route('stock.index') }}"
+                    class="nav-link {{ request()->routeIs('stock.index') ? 'active' : '' }}"
+                >
+
+                    <i class="far fa-circle nav-icon"></i>
+
+                    <p>
+                        Stock Overview
+                    </p>
+
+                </a>
+
+            </li>
+
+            {{-- Warehouses --}}
+            <li class="nav-item">
+
+                <a
+                    href="{{ route('stock.warehouses') }}"
+                    class="nav-link {{ request()->routeIs('stock.warehouses') ? 'active' : '' }}"
+                >
+
+                    <i class="far fa-circle nav-icon"></i>
+
+                    <p>
+                        Warehouses
+                    </p>
+
+                </a>
+
+            </li>
+
+            {{-- Shops --}}
+            <li class="nav-item">
+
+                <a
+                    href="{{ route('stock.shops') }}"
+                    class="nav-link {{ request()->routeIs('stock.shops') ? 'active' : '' }}"
+                >
+
+                    <i class="far fa-circle nav-icon"></i>
+
+                    <p>
+                        Shops
+                    </p>
+
+                </a>
+
+            </li>
+
+            {{-- Stock Movements --}}
+            <li class="nav-item">
+
+                <a
+                    href="{{ route('stock.movements') }}"
+                    class="nav-link {{ request()->routeIs('stock.movements') ? 'active' : '' }}"
+                >
+
+                    <i class="far fa-circle nav-icon"></i>
+
+                    <p>
+                        Stock Movements
+                    </p>
+
+                </a>
+
+            </li>
+
+            {{-- Transfers --}}
+            <li class="nav-item">
+
+                <a
+                    href="{{ route('stock.transfers') }}"
+                    class="nav-link {{ request()->routeIs('stock.transfers') ? 'active' : '' }}"
+                >
+
+                    <i class="far fa-circle nav-icon"></i>
+
+                    <p>
+                        Stock Transfers
+                    </p>
+
+                </a>
+
+            </li>
+
+        </ul>
+
+    </li>
+
+@endcan
+
+
+                
+                <!-- view stock adjst stock -->
+   {{-- Stock Movements --}}
+            @can('view stock movements')
+
+                <li class="nav-item">
+                    <a
+                        href="{{ route('stock.movements') }}"
+                        class="nav-link
+                        {{ request()->routeIs('stock.movements') ? 'active' : '' }}"
                     >
 
-                        <a
-                            href="#"
-                            class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}"
-                        >
+                        <i class="far fa-circle nav-icon"></i>
 
-                            <i class="nav-icon fas fa-warehouse"></i>
+                        <p>
+                            Stock Movements
+                        </p>
 
-                            <p>
-                                Stock
+                    </a>
 
-                                <i class="right fas fa-angle-left"></i>
-                            </p>
+                </li>
 
-                        </a>
-
-                        <ul class="nav nav-treeview">
-
-                            @can('view stock')
-
-                                <li class="nav-item">
-
-                                    <a
-                                        href="{{ route('stock.index') }}"
-                                        class="nav-link {{ request()->routeIs('stock.index') ? 'active' : '' }}"
-                                    >
-
-                                        <i class="far fa-circle nav-icon"></i>
-
-                                        <p>
-                                            Stock
-                                        </p>
-
-                                    </a>
-
-                                </li>
-
-                            @endcan
-
-                        </ul>
-
-                    </li>
-
-                @endcanany
+            @endcan
 
 
+            {{-- Stock Transfer --}}
+            @can('transfer stock')
+
+                <li class="nav-item">
+
+                    <a
+                        href="{{ route('stock.transfers') }}"
+                        class="nav-link
+                        {{ request()->routeIs('stock.transfers') ? 'active' : '' }}"
+                    >
+
+                        <i class="far fa-circle nav-icon"></i>
+
+                        <p>
+                            Stock Transfer
+                        </p>
+
+                    </a>
+
+                </li>
+
+            @endcan
                 {{-- ===================================================== --}}
                 {{-- Reports --}}
                 {{-- ===================================================== --}}
 
                 @can('view reports')
 
-                    <li class="nav-item">
+                <li class="nav-item">
 
-                        <a
-                            href="{{ route('reports.index') }}"
-                            class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}"
-                        >
+                    <a
+                        href="{{ route('reports.index') }}"
+                        class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}">
 
-                            <i class="nav-icon fas fa-chart-bar"></i>
+                        <i class="nav-icon fas fa-chart-bar"></i>
 
-                            <p>
-                                Reports
-                            </p>
+                        <p>
+                            Reports
+                        </p>
 
-                        </a>
+                    </a>
 
-                    </li>
+                </li>
 
                 @endcan
 
@@ -930,7 +1003,7 @@
     |--------------------------------------------------------------------------
     */
 
-    .pos-sidebar .nav-sidebar > .nav-item > .nav-link.active {
+    .pos-sidebar .nav-sidebar>.nav-item>.nav-link.active {
         background: #2563eb !important;
         color: #ffffff !important;
         box-shadow: 0 3px 10px rgba(37, 99, 235, 0.25);

@@ -2,6 +2,7 @@
 
 use Livewire\Component;
 use App\Livewire\Forms\EmployeeForm;
+use Livewire\Attributes\Title;
 
 new #[Title('Create Employee')] class extends Component {
     public EmployeeForm $form;

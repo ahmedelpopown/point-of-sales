@@ -8,19 +8,16 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->foreignId('shop_id')
-                ->after('employee_id')
-                ->constrained()
-                ->restrictOnDelete();
-        });
+        // shop_id belongs on order_items table, not orders table
+        if (Schema::hasColumn('orders', 'shop_id')) {
+            Schema::table('orders', function (Blueprint $table) {
+                $table->dropForeign(['shop_id']);
+                $table->dropColumn('shop_id');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('orders', function (Blueprint $table) {
-            $table->dropForeign(['shop_id']);
-            $table->dropColumn('shop_id');
-        });
     }
 };
