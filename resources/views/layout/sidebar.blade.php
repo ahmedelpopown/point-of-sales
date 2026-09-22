@@ -663,7 +663,7 @@
 
                 @canany([
                 'view installments',
-                'create installments',
+                
                 'update installments',
                 'delete installments'
                 ])
@@ -708,26 +708,7 @@
 
                         @endcan
 
-
-                        @can('create installments')
-
-                        <li class="nav-item">
-
-                            <a
-                                href="{{ route('installments.create') }}"
-                                class="nav-link {{ request()->routeIs('installments.create') ? 'active' : '' }}">
-
-                                <i class="far fa-circle nav-icon"></i>
-
-                                <p>
-                                    Create Installment
-                                </p>
-
-                            </a>
-
-                        </li>
-
-                        @endcan
+ 
 
                     </ul>
 
@@ -821,8 +802,8 @@
             <li class="nav-item">
 
                 <a
-                    href="{{ route('stock.movements') }}"
-                    class="nav-link {{ request()->routeIs('stock.movements') ? 'active' : '' }}"
+                    href="{{ route('stock.stock-movements') }}"
+                    class="nav-link {{ request()->routeIs('stock.stock-movements') ? 'active' : '' }}"
                 >
 
                     <i class="far fa-circle nav-icon"></i>
@@ -867,7 +848,7 @@
 
                 <li class="nav-item">
                     <a
-                        href="{{ route('stock.movements') }}"
+                        href="{{ route('stock.stock-movements') }}"
                         class="nav-link
                         {{ request()->routeIs('stock.movements') ? 'active' : '' }}"
                     >

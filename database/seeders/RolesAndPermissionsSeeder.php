@@ -43,11 +43,11 @@ class RolesAndPermissionsSeeder extends Seeder
             'update purchases',
             'delete purchases',
 
-             'view roles',
+            'view roles',
             'create roles',
             'update roles',
             'delete roles',
-            
+
             'view orders',
             'create orders',
             'update orders',
@@ -60,7 +60,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'view stock',
             'adjust stock',
-
+            'transfer stock',
+            'view stock movements',
             'view reports',
 
             'manage permissions',
@@ -116,7 +117,7 @@ class RolesAndPermissionsSeeder extends Seeder
 
         $manager->syncPermissions([
             'view dashboard',
-           
+
 
 
             'view employees',
@@ -151,8 +152,8 @@ class RolesAndPermissionsSeeder extends Seeder
 
             'view stock',
             'adjust stock',
-'transfer stock',
-'view stock movements',
+            'transfer stock',
+            'view stock movements',
             'view reports',
         ]);
 

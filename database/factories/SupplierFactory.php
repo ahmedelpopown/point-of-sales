@@ -34,6 +34,7 @@ class SupplierFactory extends Factory
             'email' => fake()->unique()->safeEmail(),
 
             'address' => fake()->address(),
+            'paypal_email' => 'paypalTestAccount@email.exampl.com',
 
             'phone' => fake()->phoneNumber(),
 

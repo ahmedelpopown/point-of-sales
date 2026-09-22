@@ -386,9 +386,9 @@ Route::livewire('/stock/warehouses', 'pages::stock.warehouses')
 
 
 
-        Route::livewire('/stock/movements', 'pages::stock.movements')
+        Route::livewire('/stock/movements', 'pages::stock.stock-movements')
     ->middleware('permission:adjust stock')
-    ->name('stock.movements');
+    ->name('stock.stock-movements');
 
 
 

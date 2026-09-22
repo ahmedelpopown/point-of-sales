@@ -3,6 +3,7 @@
 namespace App\Livewire\Forms;
 
 use App\Models\Order;
+use App\Models\PurchaseItem;
 use App\Services\OrderService;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Validate;
@@ -39,15 +40,21 @@ class OrderForm extends Form
             ->toArray();
     }
 
-    public function addItem(): void
-    {
-        $this->items[] = [
-            'product_id' => '',
-            'shop_id' => '',
-            'quantity' => 1,
-            'price' => 0,
-        ];
+  public function addItem(): void
+{
+    $shopId = null;
+
+    if (auth('employee')->check()) {
+        $shopId = auth('employee')->user()->shop_id;
     }
+
+    $this->items[] = [
+        'product_id' => '',
+        'shop_id' => $shopId,
+        'quantity' => 1,
+        'price' => 0,
+    ];
+}
 
     public function removeItem(int $index): void
     {
@@ -74,53 +81,78 @@ class OrderForm extends Form
                 return (float) ($item['quantity'] ?? 0) * (float) ($item['price'] ?? 0);
             });
     }
+    private function refreshPricesFromLastPurchase(): void
+{
+    foreach ($this->items as $index => $item) {
+        $productId = $item['product_id'] ?? null;
 
-    public function validateOrder(): void
-    {
-        $this->validate([
-            'user_id' => [
-                'nullable',
-                'exists:users,id',
-            ],
-            'employee_id' => [
-                'required',
-                'exists:employees,id',
-            ],
-            'items' => [
-                'required',
-                'array',
-                'min:1',
-            ],
-            'items.*.product_id' => [
-                'required',
-                'exists:products,id',
-            ],
-            'items.*.shop_id' => [
-                'required',
-                'exists:shops,id',
-            ],
-            'items.*.quantity' => [
-                'required',
-                'integer',
-                'min:1',
-            ],
-            'items.*.price' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
-        ]);
-
-        $duplicates = collect($this->items)
-            ->map(fn ($item) => ($item['product_id'] ?? '') . '-' . ($item['shop_id'] ?? ''))
-            ->duplicates();
-
-        if ($duplicates->isNotEmpty()) {
-            throw ValidationException::withMessages([
-                'items' => 'The same product cannot be added more than once for the same shop in the same order.',
-            ]);
+        if (!$productId) {
+            continue;
         }
+
+        $lastPurchasePrice = PurchaseItem::query()
+            ->where('product_id', $productId)
+            ->latest('created_at')
+            ->value('unit_price');
+
+        $this->items[$index]['price'] = $lastPurchasePrice !== null
+            ? (float) $lastPurchasePrice
+            : 0;
     }
+}
+
+ public function validateOrder(): void
+{
+    $this->refreshPricesFromLastPurchase();
+
+    $this->validate([
+        'user_id' => [
+            'nullable',
+            'exists:users,id',
+        ],
+        'employee_id' => [
+            'required',
+            'exists:employees,id',
+        ],
+        'items' => [
+            'required',
+            'array',
+            'min:1',
+        ],
+        'items.*.product_id' => [
+            'required',
+            'exists:products,id',
+        ],
+        'items.*.shop_id' => [
+            'required',
+            'exists:shops,id',
+        ],
+        'items.*.quantity' => [
+            'required',
+            'integer',
+            'min:1',
+        ],
+        'items.*.price' => [
+            'required',
+            'numeric',
+            'min:0',
+        ],
+    ]);
+
+    $duplicates = collect($this->items)
+        ->map(
+            fn ($item) =>
+                ($item['product_id'] ?? '') . '-' . ($item['shop_id'] ?? '')
+        )
+        ->duplicates();
+
+    if ($duplicates->isNotEmpty()) {
+        throw ValidationException::withMessages([
+            'items' =>
+                'The same product cannot be added more than once for the same shop in the same order.',
+        ]);
+    }
+}
 
     public function store(): Order
     {
@@ -132,7 +164,27 @@ class OrderForm extends Form
             items: $this->items,
         );
     }
+public function updatedItems($value, $key): void
+{
+    if (!str_ends_with($key, '.product_id')) {
+        return;
+    }
 
+    $index = (int) explode('.', $key)[0];
+
+    if (!$value) {
+        $this->items[$index]['price'] = 0;
+
+        return;
+    }
+
+    $price = PurchaseItem::query()
+        ->where('product_id', $value)
+        ->latest('created_at')
+        ->value('unit_price');
+
+    $this->items[$index]['price'] = $price ?? 0;
+}
     public function update(): Order
     {
         $this->validateOrder();
