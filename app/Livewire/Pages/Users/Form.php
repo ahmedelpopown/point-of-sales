@@ -1,15 +1,28 @@
 <?php
 
+namespace App\Livewire\Pages\Users;
+
 use App\Livewire\Forms\UserForm;
 use App\Models\City;
 use App\Models\Governorate;
-use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
+use App\Models\User;
 use Livewire\Component;
+use Livewire\Attributes\Computed;
 
-new #[Title('Create User')] class extends Component
+class Form extends Component
 {
     public UserForm $form;
+
+    public ?User $user = null;
+
+    public function mount(?User $user = null): void
+    {
+        $this->user = $user;
+
+        if ($user) {
+            $this->form->setUser($user);
+        }
+    }
 
     #[Computed]
     public function governorates()
@@ -30,29 +43,32 @@ new #[Title('Create User')] class extends Component
             : collect();
     }
 
-    public function updated($property): void
+    public function updatedFormGovernorateId(): void
     {
-        if ($property === 'form.governorate_id') {
-            $this->form->city_id = null;
-        }
+        $this->form->city_id = null;
     }
 
     public function save()
     {
-        $this->form->store();
-
-        session()->flash('message', 'User created successfully.');
+        if ($this->user) {
+            $this->form->update();
+            session()->flash('message', 'User updated successfully.');
+        } else {
+            $this->form->store();
+            session()->flash('message', 'User created successfully.');
+        }
 
         return $this->redirectRoute('users.index');
     }
-};
 
- 
-?>
-@include('pages.users.form', [
-    'title' => 'Create User',
+    public function render()
+    {
+        return view('pages.users.form',[
+             'title' => 'Create User',
     'subtitle' => 'Create a new user and assign their information.',
     'submitText' => 'Create User',
     'loadingText' => 'Creating...',
     'isEdit' => false,
-])
+        ]);
+    }
+}

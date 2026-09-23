@@ -3,7 +3,7 @@
     'description' => null,
 ])
 
-<section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+<section class="rounded-2xl border border-slate-200 bg-white shadow-sm">
 
     <div class="border-b border-slate-100 px-6 py-5">
 

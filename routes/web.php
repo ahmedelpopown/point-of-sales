@@ -129,6 +129,7 @@ Route::middleware('auth:employee')->group(function () {
             )
                 ->middleware('permission:update users')
                 ->name('edit');
+            
         });
 
 
