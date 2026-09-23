@@ -24,7 +24,8 @@ class Employee extends Authenticatable
         'hire_date',
         'status',
         'address',
-        'shop_id',
+         'shop_id',
+    'warehouse_id',
         'password',
     ];
   protected function casts(): array
@@ -36,11 +37,15 @@ class Employee extends Authenticatable
     ];
 }
 
-public function shop(): BelongsTo
+public function shop()
 {
     return $this->belongsTo(Shop::class);
 }
 
+public function warehouse()
+{
+    return $this->belongsTo(Warehouse::class);
+}
 
     public function getFullNameAttribute()
     {

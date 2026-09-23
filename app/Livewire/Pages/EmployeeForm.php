@@ -4,30 +4,40 @@ namespace App\Livewire\Forms;
 
 use App\Models\Employee;
 use Illuminate\Validation\Rule;
+use Livewire\Attributes\Validate;
 use Livewire\Form;
 
 class EmployeeForm extends Form
 {
     public ?Employee $employee = null;
 
+    #[Validate('required|min:2')]
     public string $first_name = '';
 
+    #[Validate('required|min:2')]
     public string $last_name = '';
 
     public string $email = '';
 
+    #[Validate('required')]
     public string $department = '';
 
+    #[Validate('required')]
     public string $position = '';
 
+    #[Validate('required|numeric|min:2')]
     public $salary = '';
 
+    #[Validate('required')]
     public string $phone = '';
 
+    #[Validate('required|date')]
     public $hire_date = '';
 
+    #[Validate('required|in:active,inactive')]
     public string $status = 'active';
 
+    #[Validate('required')]
     public string $address = '';
 
     public string $password = '';
@@ -52,6 +62,10 @@ class EmployeeForm extends Form
         $this->email = $employee->email;
         $this->department = $employee->department;
         $this->position = $employee->position;
+
+        // Never load the password hash into the form.
+        $this->password = '';
+
         $this->salary = $employee->salary;
         $this->phone = $employee->phone;
 
@@ -64,9 +78,6 @@ class EmployeeForm extends Form
 
         $this->shop_id = $employee->shop_id;
         $this->warehouse_id = $employee->warehouse_id;
-
-        // Never load the hashed password.
-        $this->password = '';
     }
 
 
@@ -76,9 +87,79 @@ class EmployeeForm extends Form
     |--------------------------------------------------------------------------
     */
 
-    public function store(): Employee
+    public function store(): void
     {
-        $this->validate([
+        $this->validate($this->storeRules());
+
+        Employee::create([
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'email' => $this->email,
+            'department' => $this->department,
+            'position' => $this->position,
+            'salary' => $this->salary,
+            'phone' => $this->phone,
+            'hire_date' => $this->hire_date,
+            'status' => $this->status,
+            'address' => $this->address,
+            'password' => $this->password,
+            'shop_id' => $this->shop_id,
+            'warehouse_id' => $this->warehouse_id,
+        ]);
+
+        $this->reset();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Update
+    |--------------------------------------------------------------------------
+    */
+
+public function update(): Employee
+{
+    if (!$this->employee) {
+        throw new \LogicException(
+            'Employee must be loaded before update.'
+        );
+    }
+
+    $this->validate($this->updateRules());
+
+    $data = [
+        'first_name' => $this->first_name,
+        'last_name' => $this->last_name,
+        'email' => $this->email,
+        'department' => $this->department,
+        'position' => $this->position,
+        'salary' => $this->salary,
+        'phone' => $this->phone,
+        'hire_date' => $this->hire_date,
+        'status' => $this->status,
+        'address' => $this->address,
+        'shop_id' => $this->shop_id,
+        'warehouse_id' => $this->warehouse_id,
+    ];
+
+    if (filled($this->password)) {
+        $data['password'] = $this->password;
+    }
+
+    $this->employee->update($data);
+
+    return $this->employee->refresh();
+}
+
+    /*
+    |--------------------------------------------------------------------------
+    | Store Rules
+    |--------------------------------------------------------------------------
+    */
+
+    protected function storeRules(): array
+    {
+        return [
             'first_name' => [
                 'required',
                 'string',
@@ -164,154 +245,105 @@ class EmployeeForm extends Form
                 'required_if:department,inventory',
                 'exists:warehouses,id',
             ],
-        ]);
-
-        $employee = Employee::create([
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'email' => $this->email,
-            'department' => $this->department,
-            'position' => $this->position,
-            'salary' => $this->salary,
-            'phone' => $this->phone,
-            'hire_date' => $this->hire_date,
-            'status' => $this->status,
-            'address' => $this->address,
-            'password' => $this->password,
-            'shop_id' => $this->shop_id,
-            'warehouse_id' => $this->warehouse_id,
-        ]);
-
-        $this->reset();
-
-        return $employee;
+        ];
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | Update
+    | Update Rules
     |--------------------------------------------------------------------------
     */
 
-    public function update(): Employee
-    {
-        if (!$this->employee) {
-            throw new \LogicException(
-                'Employee must be loaded before update.'
-            );
-        }
+ protected function updateRules(): array
+{
+    return [
+        'first_name' => [
+            'required',
+            'string',
+            'min:2',
+            'max:255',
+        ],
 
-        $this->validate([
-            'first_name' => [
-                'required',
-                'string',
-                'min:2',
-                'max:255',
-            ],
+        'last_name' => [
+            'required',
+            'string',
+            'min:2',
+            'max:255',
+        ],
 
-            'last_name' => [
-                'required',
-                'string',
-                'min:2',
-                'max:255',
-            ],
+        'email' => [
+            'required',
+            'email',
+            'max:255',
+            \Illuminate\Validation\Rule::unique('employees', 'email')
+                ->ignore($this->employee->id),
+        ],
 
-            'email' => [
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('employees', 'email')
-                    ->ignore($this->employee->id),
-            ],
+        'password' => [
+            'nullable',
+            'string',
+            'min:8',
+        ],
 
-            'password' => [
-                'nullable',
-                'string',
-                'min:8',
-            ],
+        'department' => [
+            'required',
+            \Illuminate\Validation\Rule::in([
+                'sales',
+                'inventory',
+                'purchasing',
+                'supplier',
+            ]),
+        ],
 
-            'department' => [
-                'required',
-                Rule::in([
-                    'sales',
-                    'inventory',
-                    'purchasing',
-                    'supplier',
-                ]),
-            ],
+        'position' => [
+            'required',
+            'string',
+            'max:255',
+        ],
 
-            'position' => [
-                'required',
-                'string',
-                'max:255',
-            ],
+        'salary' => [
+            'required',
+            'numeric',
+            'min:2',
+        ],
 
-            'salary' => [
-                'required',
-                'numeric',
-                'min:2',
-            ],
+        'phone' => [
+            'required',
+            'string',
+            'max:30',
+        ],
 
-            'phone' => [
-                'required',
-                'string',
-                'max:30',
-            ],
+        'hire_date' => [
+            'required',
+            'date',
+        ],
 
-            'hire_date' => [
-                'required',
-                'date',
-            ],
+        'status' => [
+            'required',
+            \Illuminate\Validation\Rule::in([
+                'active',
+                'inactive',
+            ]),
+        ],
 
-            'status' => [
-                'required',
-                Rule::in([
-                    'active',
-                    'inactive',
-                ]),
-            ],
+        'address' => [
+            'required',
+            'string',
+            'max:500',
+        ],
 
-            'address' => [
-                'required',
-                'string',
-                'max:500',
-            ],
+        'shop_id' => [
+            'nullable',
+            'required_if:department,sales',
+            'exists:shops,id',
+        ],
 
-            'shop_id' => [
-                'nullable',
-                'required_if:department,sales',
-                'exists:shops,id',
-            ],
-
-            'warehouse_id' => [
-                'nullable',
-                'required_if:department,inventory',
-                'exists:warehouses,id',
-            ],
-        ]);
-
-        $data = [
-            'first_name' => $this->first_name,
-            'last_name' => $this->last_name,
-            'email' => $this->email,
-            'department' => $this->department,
-            'position' => $this->position,
-            'salary' => $this->salary,
-            'phone' => $this->phone,
-            'hire_date' => $this->hire_date,
-            'status' => $this->status,
-            'address' => $this->address,
-            'shop_id' => $this->shop_id,
-            'warehouse_id' => $this->warehouse_id,
-        ];
-
-        if (filled($this->password)) {
-            $data['password'] = $this->password;
-        }
-
-        $this->employee->update($data);
-
-        return $this->employee->refresh();
-    }
+        'warehouse_id' => [
+            'nullable',
+            'required_if:department,inventory',
+            'exists:warehouses,id',
+        ],
+    ];
+}
 }
