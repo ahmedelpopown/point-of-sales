@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('image')->nullable();
             $table->enum('status',['active','inactive'])->default('active');
             $table->decimal('price', 10, 2);
-            $table->integer('current_quantity');
+            $table->integer('current_quantity')->nullable();
             $table->timestamps();
         });
     }
