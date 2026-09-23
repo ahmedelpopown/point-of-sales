@@ -1,47 +1,114 @@
 @props([
     'label' => null,
     'name' => null,
-    'placeholder' => 'Select option',
     'options' => [],
+    'optionValue' => null,
+    'optionLabel' => null,
+    'placeholder' => 'Select an option',
+    'hint' => null,
 ])
 
-<div>
+@php
+    $inputId = $name
+        ? preg_replace('/[^A-Za-z0-9_-]+/', '-', $name)
+        : 'select-' . uniqid();
+
+    $hasError = filled($name) && $errors->has($name);
+    $errorId = $inputId . '-error';
+@endphp
+
+<div class="w-full">
+
     @if($label)
-        <label
-            for="{{ $name }}"
-            class="block text-sm font-medium text-gray-700"
-        >
-            {{ $label }}
-        </label>
+        <div class="form-label">
+
+            <label for="{{ $inputId }}">
+                {{ $label }}
+
+                @if($attributes->has('required'))
+                    <span class="ml-1 text-red-500">*</span>
+                @endif
+            </label>
+
+            @if($hint)
+                <span class="form-hint">{{ $hint }}</span>
+            @endif
+
+        </div>
     @endif
 
-    <select
-        id="{{ $name }}"
-        name="{{ $name }}"
-        {{ $attributes->merge([
-            'class' => 'mt-2 py-3 px-4 pe-9 block w-full border-gray-200 rounded-lg text-sm focus:border-blue-500 focus:ring-blue-500',
-        ]) }}
-    >
 
-        <option value="">
-            {{ $placeholder }}
-        </option>
+    <div class="relative">
 
-        @foreach($options as $value => $optionLabel)
+        <select
+            id="{{ $inputId }}"
+            name="{{ $name }}"
+            aria-invalid="{{ $hasError ? 'true' : 'false' }}"
 
-            <option value="{{ $value }}">
-                {{ $optionLabel }}
+            @if($hasError)
+                aria-describedby="{{ $errorId }}"
+            @endif
+
+            {{ $attributes->class([
+                'form-select',
+                'form-control-error' => $hasError,
+            ]) }}
+        >
+
+            <option value="">
+                {{ $placeholder }}
             </option>
 
-        @endforeach
+            @foreach($options as $key => $option)
 
-    </select>
+                @php
+                    $value = $optionValue
+                        ? data_get($option, $optionValue)
+                        : $key;
 
-    @if($name)
-        @error($name)
-            <p class="mt-1 text-sm text-red-600">
-                {{ $message }}
-            </p>
-        @enderror
+                    $text = $optionValue && $optionLabel
+                        ? data_get($option, $optionLabel)
+                        : ($optionLabel
+                            ? data_get($option, $optionLabel)
+                            : ($optionValue
+                                ? $value
+                                : $option));
+                @endphp
+
+                <option value="{{ $value }}">
+                    {{ $text }}
+                </option>
+
+            @endforeach
+
+        </select>
+
+
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+
+            <svg
+                class="h-5 w-5 text-slate-400"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+            >
+                <path
+                    fill-rule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06Z"
+                    clip-rule="evenodd"
+                />
+            </svg>
+
+        </div>
+
+    </div>
+
+
+    @if($hasError)
+        <div id="{{ $errorId }}" class="form-error">
+            <span>
+                {{ $errors->first($name) }}
+            </span>
+        </div>
     @endif
+
 </div>

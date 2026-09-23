@@ -14,7 +14,7 @@ new #[Title('Update Product')] class extends Component {
         $this->form->setProduct($product);
     }
     public function save(){
-        $this->form->store();
+        $this->form->update();
         session()->flash('message', 'Product Updated successfully.');
         return $this->redirect('/products');
     }
@@ -33,98 +33,108 @@ new #[Title('Update Product')] class extends Component {
         </div>
     </div>
 
-    <div class="mt-8 max-w-3xl">
+      <div class="mt-8 max-w-3xl">
         <form wire:submit="save">
             <div class="space-y-6">
-              
+
                 <div class="bg-white shadow sm:rounded-lg">
                     <div class="px-4 py-5 sm:p-6">
                         <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">
-                             Information
+                            Information
                         </h3>
-                        
+
                         <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-                         
+
+
                             <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700">
-                                     Name
-                                </label>
-                                <input 
-                                    wire:model.blur="form.name"
-                                    type="text" 
-                                    id="name"
-                                    class="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                >
-                                @error('form.name')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+
+                                <x-form.input
+                                    label="Name"
+                                    name="name"
+                                    type="text"
+                                    wire:model.blur="form.name" />
+
+                                @error("name")
+                                <p class="mt-1 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
                                 @enderror
+
                             </div>
-
-                        
-
                             {{-- price --}}
                             <div>
-                                <label for="price" class="block text-sm font-medium text-gray-700">
-                                    price
-                                </label>
-                                <input 
-                                    wire:model.blur="form.price"
-                                    type="number" 
-                                    id="price"
-                                    class="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                >
-                                @error('form.price')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+
+                                <x-form.input
+                                    label="Price"
+                                    name="name"
+                                    type="number"
+                                    min="1"
+                                    wire:model.blur="form.price" id="price" />
+
+                                @error("price")
+                                <p class="mt-1 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
                                 @enderror
+
                             </div>
                             {{-- description --}}
                             <div>
-                                <label for="description" class="block text-sm font-medium text-gray-700">
-                                    description
-                                </label>
-                                <input 
-                                    wire:model.blur="form.description"
-                                    type="text" 
-                                    id="description"
-                                    class="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                >
-                                @error('form.description')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-                            </div>
 
+                                <x-form.input
+                                    label="Description"
+                                    name="description"
+                                    type="text"
+
+                                    wire:model.blur="form.description" id="description" />
+
+                                @error("description")
+                                <p class="mt-1 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
+                                @enderror
+
+                            </div>
                             {{-- barcode --}}
                             <div>
-                                <label for="barcode" class="block text-sm font-medium text-gray-700">
-                                    barcode
-                                </label>
-                                <input 
-                                    wire:model="form.barcode"
-                                    type="number" 
-                                    id="barcode"
-                                    class="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                >
-                                @error('form.barcode')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+
+                                <x-form.input
+                                    label="Barcode"
+                                    name="barcode"
+                                    type="number"
+
+                                    wire:model.blur="form.barcode" id="barcode" />
+
+                                @error("barcode")
+                                <p class="mt-1 text-sm text-red-600">
+                                    {{ $message }}
+                                </p>
                                 @enderror
+
                             </div>
-                          
+
+
+
+
+
+
                             {{-- Status --}}
                             <div class="sm:col-span-2">
-                                <label for="status" class="block text-sm font-medium text-gray-700">
-                                    Status
-                                </label>
-                                <select 
-                                    wire:model="form.status"
+
+                                <x-form.select-input
+                                    label="Status"
                                     id="status"
-                                    class="py-2.5 sm:py-3 px-4 block w-full border-gray-200 rounded-lg sm:text-sm focus:border-blue-500 focus:ring-blue-500 disabled:opacity-50 disabled:pointer-events-none dark:bg-neutral-900 dark:border-neutral-700 dark:text-neutral-400 dark:placeholder-neutral-500 dark:focus:ring-neutral-600"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Inactive</option>
-                                </select>
+                                    name="status"
+                                    :options="[
+                    'active' => 'Active',
+                    'inactive' => 'Inactive',
+                ]"
+                                    placeholder="Select Product Status"
+                                    wire:model.blur="form.status" />
                                 @error('form.status')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
+
                             </div>
 
 
@@ -132,21 +142,19 @@ new #[Title('Update Product')] class extends Component {
                     </div>
                 </div>
 
-          
+
 
                 {{-- Actions --}}
                 <div class="flex justify-end gap-3">
-                    <a 
+                    <a
                         href="{{ route('products.index') }}"
-                        class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
+                        class="rounded-md border border-gray-300 bg-white py-2 px-4 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
                         Cancel
                     </a>
-                    <button 
+                    <button
                         type="submit"
-                        class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                    >
-                        Create product
+                        class="inline-flex justify-center rounded-md border border-transparent bg-indigo-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">
+                        Update product
                     </button>
                 </div>
             </div>

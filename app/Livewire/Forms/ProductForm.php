@@ -3,75 +3,184 @@
 namespace App\Livewire\Forms;
 
 use App\Models\Product;
-use Livewire\Attributes\Validate;
+use Illuminate\Validation\Rule;
 use Livewire\Form;
 
 class ProductForm extends Form
 {
     public ?Product $product = null;
 
-    #[Validate('required|min:2')]
     public string $name = '';
 
-    /**_______________________**/
-
-    #[Validate('required|unique:products,barcode')]
     public string $barcode = '';
 
-    /**_______________________**/
-
-    #[Validate('nullable|min:20')]
     public string $description = '';
 
-    /**_______________________**/
-
-    #[Validate('required|numeric|min:0')]
     public string $price = '';
 
-    /**_______________________**/
-
-    #[Validate(['required', 'in:active,inactive'])]
     public string $status = 'active';
 
-    /**_______________________**/
+    public $image = null;
 
-    #[Validate('nullable')]
-    public $image = '';
 
-    /**_______________________**/
-
-    public function setProduct(Product $product): void
+    /**
+     * Validation rules
+     */
+    protected function rules(): array
     {
-        $this->product = $product;
+        return [
+            /*
+            |--------------------------------------------------------------------------
+            | Product Name
+            |--------------------------------------------------------------------------
+            */
+            'name' => [
+                'required',
+                'string',
+                'min:2',
+                'max:255',
+            ],
 
-        $this->name = $product->name;
-        $this->barcode = $product->barcode;
-        $this->description = $product->description ?? '';
-        $this->price = $product->price;
-        $this->status = $product->status;
-        $this->image = $product->image;
-    }
+            /*
+            |--------------------------------------------------------------------------
+            | Barcode
+            |--------------------------------------------------------------------------
+            */
+            'barcode' => [
+                'required',
+                'string',
+                'regex:/^[0-9]+$/',
+                'min:8',
+                'max:50',
 
-    public function store(): void
-    {
-        $this->validate();
+                Rule::unique('products', 'barcode')
+                    ->ignore($this->product?->id),
+            ],
 
-        Product::create(
-            $this->only([
-                'name',
-                'barcode',
-                'description',
-                'price',
-                'status',
+            /*
+            |--------------------------------------------------------------------------
+            | Description
+            |--------------------------------------------------------------------------
+            */
+            'description' => [
+                'nullable',
+                'string',
+                'max:1000',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Price
+            |--------------------------------------------------------------------------
+            */
+            'price' => [
+                'required',
+                'numeric',
+                'min:0',
+                'decimal:0,2',
+                'max:999999999.99',
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Status
+            |--------------------------------------------------------------------------
+            */
+            'status' => [
+                'required',
+                Rule::in([
+                    'active',
+                    'inactive',
+                ]),
+            ],
+
+            /*
+            |--------------------------------------------------------------------------
+            | Image
+            |--------------------------------------------------------------------------
+            */
+            'image' => [
+                'nullable',
                 'image',
-            ])
-        );
-
-        $this->reset();
-
-        $this->status = 'active';
+                'mimes:jpg,jpeg,png,webp',
+                'max:2048',
+            ],
+        ];
     }
 
+
+    /**
+     * Custom validation messages
+     */
+    protected function messages(): array
+    {
+        return [
+
+            'name.required' => 'Product name is required.',
+            'name.min' => 'Product name must be at least 2 characters.',
+            'name.max' => 'Product name cannot exceed 255 characters.',
+
+            'barcode.required' => 'Barcode is required.',
+            'barcode.regex' => 'Barcode must contain numbers only.',
+            'barcode.min' => 'Barcode must be at least 8 digits.',
+            'barcode.max' => 'Barcode cannot exceed 50 digits.',
+            'barcode.unique' => 'This barcode is already registered.',
+
+            'description.max' => 'Description cannot exceed 1000 characters.',
+
+            'price.required' => 'Product price is required.',
+            'price.numeric' => 'Product price must be a valid number.',
+            'price.min' => 'Product price cannot be negative.',
+            'price.decimal' => 'Product price may contain up to 2 decimal places.',
+            'price.max' => 'Product price is too large.',
+
+            'status.required' => 'Please select a product status.',
+            'status.in' => 'Invalid product status.',
+
+            'image.image' => 'The uploaded file must be an image.',
+            'image.mimes' => 'Image must be JPG, JPEG, PNG, or WEBP.',
+            'image.max' => 'Image size cannot exceed 2 MB.',
+        ];
+    }
+
+
+    /**
+     * Custom attribute names
+     */
+    protected function validationAttributes(): array
+    {
+        return [
+            'name' => 'product name',
+            'barcode' => 'barcode',
+            'description' => 'description',
+            'price' => 'price',
+            'status' => 'status',
+            'image' => 'product image',
+        ];
+    }
+    public function setProduct(Product $product): void
+{
+    $this->product = $product;
+
+    $this->name = $product->name;
+    $this->barcode = $product->barcode;
+    $this->description = $product->description ?? '';
+    $this->price = (string) $product->price;
+    $this->status = $product->status;
+}
+
+public function store()
+{
+    $this->validate();
+
+    Product::create([
+        'name' => $this->name,
+        'barcode' => $this->barcode,
+        'description' => $this->description,
+        'price' => $this->price,
+        'status' => $this->status,
+    ]);
+}
     public function update(): void
     {
         $this->validate([

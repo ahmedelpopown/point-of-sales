@@ -201,9 +201,14 @@ public function save(InstallmentService $service)
     label="Customer"
     model="form.user_id"
     :options="$this->users"
+     x-ref="search"
+    x-model="search"
+     type="search"
     option-value="id"
     option-label="name"
     placeholder="Select Customer"
+    autocomplete="off"
+    class="form-search"
 />
 
             {{-- Employee --}}
@@ -542,11 +547,9 @@ public function save(InstallmentService $service)
             </div>
 
             <div>
-    <label class="block text-sm font-medium text-gray-700">
-        Payment Method
-    </label>
+  
 
-    <select
+    <!-- <select
         wire:model.live="payment_method"
         class="mt-1 block w-full rounded-xl border-gray-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
     >
@@ -557,13 +560,19 @@ public function save(InstallmentService $service)
         <option value="installment">
             Installment
         </option>
-    </select>
+    </select> -->
 
-    @error('payment_method')
-        <p class="mt-1 text-sm text-red-600">
-            {{ $message }}
-        </p>
-    @enderror
+   <x-form.select-input
+    label="Status"
+    name="form.status"
+    :options="[
+        'cash' => 'Cash',
+        'installment' => 'Installment',
+    ]"
+    placeholder="Select product status"
+    required
+    wire:model.live="form.status"
+/>
 </div>
 @if($payment_method === 'installment')
 

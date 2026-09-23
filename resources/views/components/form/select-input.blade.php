@@ -5,86 +5,112 @@
     'optionValue' => null,
     'optionLabel' => null,
     'placeholder' => 'Select an option',
+    'hint' => null,
 ])
 
 @php
     $inputId = $name
-        ? str_replace(['.', '[]'], ['-', ''], $name)
-        : null;
+        ? preg_replace('/[^A-Za-z0-9_-]+/', '-', $name)
+        : 'select-' . uniqid();
+
+    $hasError = filled($name) && $errors->has($name);
+
+    $required = $attributes->has('required');
 @endphp
 
-<div class="w-full">
+<x-form.field
+    :label="$label"
+    :name="$name"
+    :hint="$hint"
+    :required="$required"
+    fieldId="{{ $inputId }}"
+>
 
-    @if($label)
-        <label
-            for="{{ $inputId }}"
-            class="block text-sm font-medium text-gray-700"
+    <div class="relative">
+
+        <select
+            id="{{ $inputId }}"
+            name="{{ $name }}"
+            aria-invalid="{{ $hasError ? 'true' : 'false' }}"
+
+            @if($hasError)
+                aria-describedby="{{ $inputId }}-error"
+            @endif
+
+            {{ $attributes->class([
+                'form-control',
+                'form-select',
+                'form-control-error' => $hasError,
+            ]) }}
         >
-            {{ $label }}
-        </label>
-    @endif
 
-    <select
-        id="{{ $inputId }}"
-        name="{{ $name }}"
-        {{ $attributes->merge([
-            'class' => 'mt-2 block w-full rounded-lg border border-gray-200 bg-white px-4 py-3 pe-10 text-sm text-gray-900 shadow-sm transition focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400',
-        ]) }}
-    >
-
-        <option value="">
-            {{ $placeholder }}
-        </option>
-
-        @foreach($options as $key => $option)
-
-            @php
-                /*
-                 * Model / Object:
-                 * optionValue + optionLabel are provided.
-                 */
-                if ($optionValue) {
-
-                    $value = data_get($option, $optionValue);
-
-                    $text = $optionLabel
-                        ? data_get($option, $optionLabel)
-                        : $value;
-
-                /*
-                 * Simple / Associative Array:
-                 *
-                 * [
-                 *     'warehouse' => 'Warehouses',
-                 *     'shop' => 'Shops',
-                 * ]
-                 */
-                } else {
-
-                    $value = $key;
-                    $text = $option;
-
-                }
-            @endphp
-
-            <option value="{{ $value }}">
-                {{ $text }}
+            <option value="">
+                {{ $placeholder }}
             </option>
 
-        @endforeach
+            @foreach($options as $key => $option)
 
-    </select>
+                @php
+                    if ($optionValue) {
+                        $value = data_get($option, $optionValue);
 
-    @if($name)
+                        $text = $optionLabel
+                            ? data_get($option, $optionLabel)
+                            : $value;
+                    } else {
+                        $value = $key;
+                        $text = $option;
+                    }
+                @endphp
 
-        @error($name)
+                <option value="{{ $value }}">
+                    {{ $text }}
+                </option>
 
-            <p class="mt-1 text-sm text-red-600">
-                {{ $message }}
-            </p>
+            @endforeach
 
-        @enderror
+        </select>
 
-    @endif
 
-</div>
+        {{-- Chevron --}}
+        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-4">
+
+            @if($hasError)
+
+                <span class="form-error-badge">
+
+                    <svg
+                        class="h-3.5 w-3.5"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                    >
+                        <path
+                            fill-rule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16Zm-1-5.5a1 1 0 112 0 1 1 0 01-2 0v3a1 1 0 01-2 0v-3Zm1 7.5a.875.875 0 100-1.75A.875.875 0 0010 20Z"
+                            clip-rule="evenodd"
+                        />
+                    </svg>
+
+                </span>
+
+            @else
+
+                <svg
+                    class="h-5 w-5 text-slate-400"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                >
+                    <path
+                        fill-rule="evenodd"
+                        d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06Z"
+                        clip-rule="evenodd"
+                    />
+                </svg>
+
+            @endif
+
+        </div>
+
+    </div>
+
+</x-form.field>
