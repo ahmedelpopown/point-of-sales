@@ -4,6 +4,7 @@ namespace App\Livewire\Forms;
 
 use App\Models\Purchase;
 use App\Services\PurchaseService;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Validate;
 use Livewire\Form;
 
@@ -24,31 +25,33 @@ class PurchaseForm extends Form
 
     public function setPurchase(Purchase $purchase): void
     {
-        $this->purchase = $purchase;
+        $this->purchase = $purchase->load('purchaseItems');
 
         $this->supplier_id = $purchase->supplier_id;
+
         $this->employee_id = $purchase->employee_id;
+
         $this->warehouse_id = $purchase->warehouse_id;
 
-        $this->items = $purchase
-            ->purchaseItems()
-            ->get()
-            ->map(fn ($item) => [
-                'product_id' => $item->product_id,
-                'quantity' => $item->quantity,
-                'unit_price' => $item->unit_price,
-            ])
-            ->toArray();
+        $this->items = $purchase->purchaseItems
+    ->map(fn ($item) => [
+        'key' => (string) Str::uuid(),
+        'product_id' => $item->product_id,
+        'quantity' => $item->quantity,
+        'unit_price' => $item->unit_price,
+    ])
+    ->toArray();
     }
 
-    public function addItem(): void
-    {
-        $this->items[] = [
-            'product_id' => '',
-            'quantity' => 1,
-            'unit_price' => 0,
-        ];
-    }
+public function addItem(): void
+{
+    $this->items[] = [
+        'key' => (string) Str::uuid(),
+        'product_id' => '',
+        'quantity' => 1,
+        'unit_price' => 0,
+    ];
+}
 
     public function removeItem(int $index): void
     {
@@ -59,6 +62,16 @@ class PurchaseForm extends Form
         unset($this->items[$index]);
 
         $this->items = array_values($this->items);
+    }
+
+    public function itemTotal(int $index): float
+    {
+        $item = $this->items[$index] ?? [];
+
+        return
+            (float) ($item['quantity'] ?? 0)
+            *
+            (float) ($item['unit_price'] ?? 0);
     }
 
     public function totalPrice(): float
@@ -87,6 +100,7 @@ class PurchaseForm extends Form
     public function update(): Purchase
     {
         $this->validate();
+
         $this->validateItems();
 
         return app(PurchaseService::class)->update(

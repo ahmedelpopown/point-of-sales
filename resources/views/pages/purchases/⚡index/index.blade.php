@@ -1,235 +1,350 @@
-<div class="px-4 sm:px-6 lg:px-8">
+<div class="px-4 py-6 sm:px-6 lg:px-8">
 
-    {{-- Header --}}
-    <div class="sm:flex sm:items-center">
+    <div class="mx-auto max-w-7xl">
 
-        <div class="sm:flex-auto">
-
-            <h1 class="text-2xl font-semibold text-gray-900">
-                Purchases
-            </h1>
-
-            <p class="mt-2 text-sm text-gray-700">
-                A list of all purchase transactions.
-            </p>
-
-        </div>
-
-        <div class="mt-4 sm:mt-0">
-
-            <a
-                href="{{ route('purchases.create') }}"
-                class="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700"
-            >
-                Add Purchase
-            </a>
-
-        </div>
-
-    </div>
-
-    {{-- Success --}}
-    @if(session()->has('message'))
-
-        <div class="mt-4 rounded-md bg-green-50 p-4">
-
-            <p class="text-sm font-medium text-green-800">
-                {{ session('message') }}
-            </p>
-
-        </div>
-
-    @endif
-
-    {{-- Error --}}
-    @if(session()->has('error'))
-
-        <div class="mt-4 rounded-md bg-red-50 p-4">
-
-            <p class="text-sm font-medium text-red-800">
-                {{ session('error') }}
-            </p>
-
-        </div>
-
-    @endif
-
-    {{-- Search --}}
-    <div class="mt-8 flex flex-col gap-4 md:flex-row">
-
-        <div class="flex-1">
-
-            <input
-                wire:model.live.debounce.300ms="search"
-                type="text"
-                placeholder="Search supplier or employee..."
-                class="block w-full rounded-lg border-gray-300"
-            >
-
-        </div>
-
-        <button
-            wire:click="resetFilters"
-            class="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+        {{-- Header --}}
+        <x-ui.page-header
+            title="Purchases"
+            subtitle="Manage purchase transactions, suppliers, warehouses, and products."
         >
-            Reset
-        </button>
+            <x-slot:actions>
 
-    </div>
+                <div class="flex flex-wrap items-center gap-2">
 
-    {{-- Table --}}
-    <div class="mt-8 flex flex-col">
+                    {{-- Export --}}
+                    <button
+                        type="button"
+                        wire:click="exportExcel"
+                        wire:loading.attr="disabled"
+                        class="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                        <span wire:loading.remove wire:target="exportExcel">
+                            Export Excel
+                        </span>
 
-        <div class="-my-2 -mx-4 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                        <span wire:loading wire:target="exportExcel">
+                            Exporting...
+                        </span>
+                    </button>
 
-            <div class="inline-block min-w-full py-2 align-middle md:px-6 lg:px-8">
 
-                <div class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 md:rounded-lg">
+                    {{-- Import --}}
+                    <label
+                        class="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+                    >
+                        Import Excel
 
-                    <table class="min-w-full divide-y divide-gray-300">
+                        <input
+                            type="file"
+                            wire:model="importFile"
+                            accept=".xlsx,.xls,.csv"
+                            class="hidden"
+                        >
+                    </label>
 
-                        <thead class="bg-gray-50">
 
-                            <tr>
+                    {{-- Process Import --}}
+                    @if($importFile)
 
-                                <th
-                                    wire:click="sortBy('id')"
-                                    class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                                >
-                                    ID
+                        <button
+                            type="button"
+                            wire:click="import"
+                            wire:loading.attr="disabled"
+                            class="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <span wire:loading.remove wire:target="import">
+                                Process Import
+                            </span>
 
-                                    @if($sortField === 'id')
-                                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                                    @endif
-                                </th>
+                            <span wire:loading wire:target="import">
+                                Importing...
+                            </span>
+                        </button>
 
-                                <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                    Supplier
-                                </th>
+                    @endif
 
-                                <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                    Employee
-                                </th>
 
-                                <th class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
-                                    Items
-                                </th>
+                    {{-- Add --}}
+                    <a
+                        href="{{ route('purchases.create') }}"
+                        wire:navigate
+                        class="inline-flex h-10 items-center justify-center rounded-xl bg-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+                    >
+                        + Add Purchase
+                    </a>
 
-                                <th
-                                    wire:click="sortBy('total_price')"
-                                    class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                                >
-                                    Total
+                </div>
 
-                                    @if($sortField === 'total_price')
-                                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                                    @endif
-                                </th>
+            </x-slot:actions>
+        </x-ui.page-header>
 
-                                <th
-                                    wire:click="sortBy('created_at')"
-                                    class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                                >
-                                    Date
 
-                                    @if($sortField === 'created_at')
-                                        {{ $sortDirection === 'asc' ? '↑' : '↓' }}
-                                    @endif
-                                </th>
+        {{-- Alerts --}}
+        @if(session('message'))
 
-                                <th class="relative py-3.5 pl-3 pr-4 sm:pr-6">
-                                    <span class="sr-only">
-                                        Actions
-                                    </span>
-                                </th>
+            <div class="mt-5">
+                <x-ui.alert
+                    type="success"
+                    :message="session('message')"
+                />
+            </div>
 
-                            </tr>
+        @endif
 
-                        </thead>
 
-                        <tbody class="divide-y divide-gray-200 bg-white">
+        @if(session('error'))
 
-                            @forelse($this->purchases as $purchase)
+            <div class="mt-5">
+                <x-ui.alert
+                    type="error"
+                    :message="session('error')"
+                />
+            </div>
 
-                                <tr
-                                    wire:key="purchase-{{ $purchase->id }}"
-                                    class="hover:bg-gray-50"
-                                >
+        @endif
 
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        #{{ $purchase->id }}
-                                    </td>
 
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm font-medium text-gray-900">
-                                        {{ $purchase->supplier->name ?? 'N/A' }}
-                                    </td>
+        {{-- Selected Import File --}}
+        @if($importFile)
 
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        {{ $purchase->employee->full_name ?? 'N/A' }}
-                                    </td>
+            <div class="mt-4 flex items-center justify-between rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
 
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        {{ $purchase->purchaseItems()->count() }}
-                                    </td>
+                <div>
 
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm font-semibold text-gray-900">
-                                        {{ number_format($purchase->total_price, 2) }}
-                                    </td>
+                    <p class="text-sm font-semibold text-emerald-800">
+                        File selected
+                    </p>
 
-                                    <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                        {{ $purchase->created_at?->format('Y-m-d H:i') }}
-                                    </td>
+                    <p class="mt-0.5 text-xs text-emerald-700">
+                        {{ $importFile->getClientOriginalName() }}
+                    </p>
 
-                                    <td class="whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm sm:pr-6">
+                </div>
 
-                                        <div class="flex justify-end gap-3">
+                <button
+                    type="button"
+                    wire:click="$set('importFile', null)"
+                    class="text-xs font-semibold text-emerald-700 hover:text-emerald-900"
+                >
+                    Remove
+                </button>
 
-                                            <a
-                                                href="{{ route('purchases.show', $purchase) }}"
-                                                class="text-green-600 hover:text-green-900"
-                                            >
-                                                Show
-                                            </a>
+            </div>
 
-                                            <a
-                                                href="{{ route('purchases.edit', $purchase) }}"
-                                                class="text-indigo-600 hover:text-indigo-900"
-                                            >
-                                                Edit
-                                            </a>
+        @endif
 
-                                            <button
-                                                wire:click="deletePurchase({{ $purchase->id }})"
-                                                wire:confirm="Are you sure you want to delete this purchase?"
-                                                class="text-red-600 hover:text-red-900"
-                                            >
-                                                Delete
-                                            </button>
 
-                                        </div>
+        {{-- ========================================================= --}}
+        {{-- Filters --}}
+        {{-- ========================================================= --}}
 
-                                    </td>
+        <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
 
-                                </tr>
+            {{-- Header --}}
+            <div class="border-b border-slate-100 px-5 py-4">
 
-                            @empty
+                <div class="flex items-center justify-between gap-4">
 
-                                <tr>
+                    <div>
 
-                                    <td
-                                        colspan="7"
-                                        class="px-3 py-8 text-center text-sm text-gray-500"
-                                    >
-                                        No purchases found.
-                                    </td>
+                        <h2 class="text-sm font-semibold text-slate-900">
+                            Filters
+                        </h2>
 
-                                </tr>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Search and filter purchase transactions.
+                        </p>
 
-                            @endforelse
+                    </div>
 
-                        </tbody>
 
-                    </table>
+                    @if(
+                        $search ||
+                        $supplier_id ||
+                        $employee_id ||
+                        $warehouse_id ||
+                        $product_id ||
+                        $date_from ||
+                        $date_to ||
+                        $total_min !== '' ||
+                        $total_max !== ''
+                    )
+
+                        <button
+                            type="button"
+                            wire:click="resetFilters"
+                            class="shrink-0 text-xs font-semibold text-slate-500 transition hover:text-slate-900"
+                        >
+                            Clear all
+                        </button>
+
+                    @endif
+
+                </div>
+
+            </div>
+
+
+            {{-- Body --}}
+            <div class="px-5 py-5">
+
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-12">
+
+                    {{-- Search --}}
+                    <div class="xl:col-span-4">
+
+                        <x-form.input
+                            label="Search"
+                            name="search"
+                            placeholder="Purchase ID, supplier, employee, warehouse..."
+                            wire:model.live.debounce.300ms="search"
+                        />
+
+                    </div>
+
+
+                    {{-- Supplier --}}
+                    <div class="xl:col-span-2">
+
+                        <x-form.searchable-select
+                            label="Supplier"
+                            name="supplier"
+                            model="supplier_id"
+                            :options="$this->suppliers"
+                            optionValue="id"
+                            optionLabel="name"
+                            placeholder="All Suppliers"
+                            searchPlaceholder="Search suppliers..."
+                            :clearable="true"
+                        />
+
+                    </div>
+
+
+                    {{-- Employee --}}
+                    <div class="xl:col-span-3">
+
+                        <x-form.searchable-select
+                            label="Employee"
+                            name="employee"
+                            model="employee_id"
+                            :options="$this->employees"
+                            optionValue="id"
+                            optionLabel="full_name"
+                            placeholder="All Employees"
+                            searchPlaceholder="Search employees..."
+                            :clearable="true"
+                        />
+
+                    </div>
+
+
+                    {{-- Warehouse --}}
+                    <div class="xl:col-span-3">
+
+                        <x-form.searchable-select
+                            label="Warehouse"
+                            name="warehouse"
+                            model="warehouse_id"
+                            :options="$this->warehouses"
+                            optionValue="id"
+                            optionLabel="name"
+                            placeholder="All Warehouses"
+                            searchPlaceholder="Search warehouses..."
+                            :clearable="true"
+                        />
+
+                    </div>
+
+
+                    {{-- Product --}}
+                    <div class="xl:col-span-4">
+
+                        <x-form.searchable-select
+                            label="Product"
+                            name="product"
+                            model="product_id"
+                            :options="$this->products"
+                            optionValue="id"
+                            optionLabel="name"
+                            placeholder="All Products"
+                            searchPlaceholder="Search products..."
+                            :clearable="true"
+                        />
+
+                    </div>
+
+
+                    {{-- Date From --}}
+                    <div class="xl:col-span-2">
+
+                        <x-form.input
+                            label="Date From"
+                            name="date_from"
+                            type="date"
+                            wire:model.live="date_from"
+                        />
+
+                    </div>
+
+
+                    {{-- Date To --}}
+                    <div class="xl:col-span-2">
+
+                        <x-form.input
+                            label="Date To"
+                            name="date_to"
+                            type="date"
+                            wire:model.live="date_to"
+                        />
+
+                    </div>
+
+
+                    {{-- Minimum Total --}}
+                    <div class="xl:col-span-2">
+
+                        <x-form.input
+                            label="Min Total"
+                            name="total_min"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            wire:model.live.debounce.400ms="total_min"
+                        />
+
+                    </div>
+
+
+                    {{-- Maximum Total --}}
+                    <div class="xl:col-span-2">
+
+                        <x-form.input
+                            label="Max Total"
+                            name="total_max"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            wire:model.live.debounce.400ms="total_max"
+                        />
+
+                    </div>
+
+
+                    {{-- Reset --}}
+                    <div class="flex items-end xl:col-span-2">
+
+                        <button
+                            type="button"
+                            wire:click="resetFilters"
+                            class="inline-flex h-10 w-full items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                        >
+                            Reset Filters
+                        </button>
+
+                    </div>
 
                 </div>
 
@@ -237,11 +352,157 @@
 
         </div>
 
-    </div>
 
-    {{-- Pagination --}}
-    <div class="mt-4">
-        {{ $this->purchases->links() }}
+        {{-- ========================================================= --}}
+        {{-- Results --}}
+        {{-- ========================================================= --}}
+
+        <div class="mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm">
+
+            {{-- Results Header --}}
+            <div class="flex flex-col gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+
+                <div>
+
+                    <h2 class="text-sm font-semibold text-slate-900">
+                        Purchase Transactions
+                    </h2>
+
+                    <p class="mt-1 text-xs text-slate-500">
+
+                        @if($this->purchases->total())
+
+                            Showing
+
+                            <span class="font-semibold text-slate-700">
+                                {{ $this->purchases->firstItem() }}
+                            </span>
+
+                            -
+
+                            <span class="font-semibold text-slate-700">
+                                {{ $this->purchases->lastItem() }}
+                            </span>
+
+                            of
+
+                            <span class="font-semibold text-slate-700">
+                                {{ $this->purchases->total() }}
+                            </span>
+
+                            purchases
+
+                        @else
+
+                            No purchases found.
+
+                        @endif
+
+                    </p>
+
+                </div>
+
+
+                @if($this->purchases->hasPages())
+
+                    <p class="text-xs text-slate-500">
+
+                        Page
+
+                        <span class="font-semibold text-slate-700">
+                            {{ $this->purchases->currentPage() }}
+                        </span>
+
+                        of
+
+                        <span class="font-semibold text-slate-700">
+                            {{ $this->purchases->lastPage() }}
+                        </span>
+
+                    </p>
+
+                @endif
+
+            </div>
+
+
+            {{-- Table --}}
+            <div class="overflow-x-auto">
+
+                <x-ui.data-table
+                    :items="$this->purchases"
+
+                    :columns="[
+                        [
+                            'field' => 'id',
+                            'label' => 'ID',
+                            'sortable' => true,
+                        ],
+                        [
+                            'field' => 'supplier_name',
+                            'label' => 'Supplier',
+                            'type' => 'avatar',
+                        ],
+                        [
+                            'field' => 'employee_name',
+                            'label' => 'Employee',
+                        ],
+                        [
+                            'field' => 'warehouse_name',
+                            'label' => 'Warehouse',
+                        ],
+                        [
+                            'field' => 'items_count',
+                            'label' => 'Items',
+                        ],
+                        [
+                            'field' => 'total_price',
+                            'label' => 'Total',
+                            'type' => 'money',
+                            'bold' => true,
+                            'sortable' => true,
+                        ],
+                        [
+                            'field' => 'created_at_formatted',
+                            'label' => 'Date',
+                        ],
+                    ]"
+
+                    emptyText="No purchases found."
+
+                    :sortField="$sortField"
+                    :sortDirection="$sortDirection"
+
+                    showRoute="purchases.show"
+                    editRoute="purchases.edit"
+                    deleteMethod="deletePurchase"
+
+                    rowKey="id"
+
+                    :compact="true"
+                    :showPagination="false"
+                />
+
+            </div>
+
+
+            {{-- Pagination --}}
+            @if($this->purchases->hasPages())
+
+                <div class="border-t border-slate-100 px-5 py-4">
+
+                    <div class="flex justify-end">
+
+                        {{ $this->purchases->links() }}
+
+                    </div>
+
+                </div>
+
+            @endif
+
+        </div>
+
     </div>
 
 </div>

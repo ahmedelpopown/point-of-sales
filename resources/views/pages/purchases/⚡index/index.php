@@ -1,70 +1,409 @@
 <?php
 
+use App\Exports\PurchaseExport;
+use App\Imports\PurchaseImport;
+use App\Models\Employee;
+use App\Models\Product;
 use App\Models\Purchase;
-use App\Services\PurchaseService;
+use App\Models\Supplier;
+use App\Models\Warehouse;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 
+use Maatwebsite\Excel\Facades\Excel;
 new #[Title('Purchases')] class extends Component
 {
-    use WithPagination;
+    use WithPagination, WithFileUploads;
 
-    public $search = '';
+    public $importFile = null;
 
-    public $sortField = 'created_at';
+    public string $search = '';
 
-    public $sortDirection = 'desc';
+    public $supplier_id = '';
 
-    public $perPage = 10;
+    public $employee_id = '';
+
+    public $warehouse_id = '';
+
+    public $product_id = '';
+
+    public $date_from = '';
+
+    public $date_to = '';
+
+    public $total_min = '';
+
+    public $total_max = '';
+
+    public string $sortField = 'created_at';
+
+    public string $sortDirection = 'desc';
+
+    public int $perPage = 10;
 
     protected $queryString = [
         'search' => ['except' => ''],
+        'supplier_id' => ['except' => ''],
+        'employee_id' => ['except' => ''],
+        'warehouse_id' => ['except' => ''],
+        'product_id' => ['except' => ''],
+        'date_from' => ['except' => ''],
+        'date_to' => ['except' => ''],
+        'total_min' => ['except' => ''],
+        'total_max' => ['except' => ''],
         'sortField' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
     ];
 
-    #[Computed]
-    public function purchases()
-    {
-        return Purchase::query()
-            ->with([
-                'supplier',
-                'employee',
-            ])
-            ->when($this->search, function ($query) {
 
-                $search = '%' . $this->search . '%';
+    /*
+    |--------------------------------------------------------------------------
+    | Filter Options
+    |--------------------------------------------------------------------------
+    */
+
+    #[Computed]
+    public function suppliers()
+    {
+        return Supplier::query()
+            ->orderBy('name')
+            ->get();
+    }
+
+
+    #[Computed]
+    public function employees()
+    {
+        return Employee::query()
+            ->orderBy('first_name')
+            ->get();
+    }
+
+
+    #[Computed]
+    public function warehouses()
+    {
+        return Warehouse::query()
+            ->orderBy('name')
+            ->get();
+    }
+
+
+    #[Computed]
+    public function products()
+    {
+        return Product::query()
+            ->orderBy('name')
+            ->get();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Base Query
+    |--------------------------------------------------------------------------
+    */
+
+    private function filteredQuery()
+    {
+        $query = Purchase::query()
+            ->with([
+                'supplier:id,name',
+                'employee:id,first_name,last_name,email',
+                'warehouse:id,name',
+                'purchaseItems.product:id,name',
+            ])
+            ->withCount('purchaseItems');
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Search
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            trim($this->search) !== '',
+            function ($query) {
+
+                $search = '%' . trim($this->search) . '%';
 
                 $query->where(function ($q) use ($search) {
 
-                    $q->whereHas('supplier', function ($supplierQuery) use ($search) {
-                        $supplierQuery->where('name', 'like', $search);
-                    })
+                    if (is_numeric($this->search)) {
+                        $q->where(
+                            'id',
+                            (int) $this->search
+                        );
+                    }
 
-                    ->orWhereHas('employee', function ($employeeQuery) use ($search) {
-                        $employeeQuery
-                            ->where('first_name', 'like', $search)
-                            ->orWhere('last_name', 'like', $search)
-                            ->orWhere('email', 'like', $search);
-                    });
+                    $q->orWhereHas(
+                        'supplier',
+                        function ($supplierQuery) use ($search) {
+
+                            $supplierQuery->where(
+                                'name',
+                                'like',
+                                $search
+                            );
+                        }
+                    );
+
+                    $q->orWhereHas(
+                        'employee',
+                        function ($employeeQuery) use ($search) {
+
+                            $employeeQuery
+                                ->where(
+                                    'first_name',
+                                    'like',
+                                    $search
+                                )
+                                ->orWhere(
+                                    'last_name',
+                                    'like',
+                                    $search
+                                )
+                                ->orWhere(
+                                    'email',
+                                    'like',
+                                    $search
+                                );
+                        }
+                    );
+
+                    $q->orWhereHas(
+                        'warehouse',
+                        function ($warehouseQuery) use ($search) {
+
+                            $warehouseQuery->where(
+                                'name',
+                                'like',
+                                $search
+                            );
+                        }
+                    );
+
+                    $q->orWhereHas(
+                        'purchaseItems.product',
+                        function ($productQuery) use ($search) {
+
+                            $productQuery->where(
+                                'name',
+                                'like',
+                                $search
+                            );
+                        }
+                    );
 
                 });
-            })
-            ->orderBy(
-                $this->sortField,
-                $this->sortDirection
-            )
-            ->paginate($this->perPage);
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Supplier
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->supplier_id,
+            fn ($query) =>
+                $query->where(
+                    'supplier_id',
+                    $this->supplier_id
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Employee
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->employee_id,
+            fn ($query) =>
+                $query->where(
+                    'employee_id',
+                    $this->employee_id
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Warehouse
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->warehouse_id,
+            fn ($query) =>
+                $query->where(
+                    'warehouse_id',
+                    $this->warehouse_id
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Product
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->product_id,
+            fn ($query) =>
+                $query->whereHas(
+                    'purchaseItems',
+                    fn ($itemQuery) =>
+                        $itemQuery->where(
+                            'product_id',
+                            $this->product_id
+                        )
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date From
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->date_from,
+            fn ($query) =>
+                $query->whereDate(
+                    'created_at',
+                    '>=',
+                    $this->date_from
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Date To
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->date_to,
+            fn ($query) =>
+                $query->whereDate(
+                    'created_at',
+                    '<=',
+                    $this->date_to
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Total From
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->total_min !== '',
+            fn ($query) =>
+                $query->where(
+                    'total_price',
+                    '>=',
+                    (float) $this->total_min
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Total To
+        |--------------------------------------------------------------------------
+        */
+
+        $query->when(
+            $this->total_max !== '',
+            fn ($query) =>
+                $query->where(
+                    'total_price',
+                    '<=',
+                    (float) $this->total_max
+                )
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Sorting
+        |--------------------------------------------------------------------------
+        */
+
+        $query->orderBy(
+            $this->sortField,
+            $this->sortDirection
+        );
+
+        return $query;
     }
 
-    public function updatedSearch()
+
+    /*
+    |--------------------------------------------------------------------------
+    | Purchases
+    |--------------------------------------------------------------------------
+    */
+
+    #[Computed]
+    public function purchases()
     {
-        $this->resetPage();
+        $paginator = $this->filteredQuery()
+            ->paginate($this->perPage);
+
+
+        $paginator->through(
+            function ($purchase) {
+
+                $purchase->supplier_name =
+                    $purchase->supplier?->name ?? 'N/A';
+
+                $purchase->employee_name =
+                    $purchase->employee?->full_name ?? 'N/A';
+
+                $purchase->warehouse_name =
+                    $purchase->warehouse?->name ?? 'N/A';
+
+                $purchase->items_count =
+                    $purchase->purchase_items_count;
+
+                $purchase->created_at_formatted =
+                    $purchase->created_at?->format(
+                        'Y-m-d H:i'
+                    );
+
+                return $purchase;
+            }
+        );
+
+        return $paginator;
     }
 
-    public function sortBy($field)
+
+    /*
+    |--------------------------------------------------------------------------
+    | Sorting
+    |--------------------------------------------------------------------------
+    */
+
+    public function sortBy(string $field): void
     {
         $allowedFields = [
             'id',
@@ -72,7 +411,7 @@ new #[Title('Purchases')] class extends Component
             'created_at',
         ];
 
-        if (!in_array($field, $allowedFields)) {
+        if (!in_array($field, $allowedFields, true)) {
             return;
         }
 
@@ -93,24 +432,189 @@ new #[Title('Purchases')] class extends Component
         $this->resetPage();
     }
 
-    public function resetFilters()
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reset Pagination When Filters Change
+    |--------------------------------------------------------------------------
+    */
+
+    public function updatedSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedSupplierId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedEmployeeId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedWarehouseId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedProductId(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateFrom(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedDateTo(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedTotalMin(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatedTotalMax(): void
+    {
+        $this->resetPage();
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Reset Filters
+    |--------------------------------------------------------------------------
+    */
+
+    public function resetFilters(): void
     {
         $this->reset([
             'search',
-            'sortField',
-            'sortDirection',
+            'supplier_id',
+            'employee_id',
+            'warehouse_id',
+            'product_id',
+            'date_from',
+            'date_to',
+            'total_min',
+            'total_max',
         ]);
+
+        $this->sortField = 'created_at';
+        $this->sortDirection = 'desc';
 
         $this->resetPage();
     }
 
-    public function deletePurchase(
-        $purchaseId,
-        PurchaseService $purchaseService
-    ) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | Export
+    |--------------------------------------------------------------------------
+    */
+
+    public function exportExcel()
+    {
+        $purchases = $this->filteredQuery()
+            ->with([
+                'supplier:id,name',
+                'employee:id,first_name,last_name',
+                'warehouse:id,name',
+                'purchaseItems.product:id,name',
+            ])
+            ->get();
+
+        return Excel::download(
+            new PurchaseExport($purchases),
+            'purchases-' . now()->format('Y-m-d') . '.xlsx'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Import
+    |--------------------------------------------------------------------------
+    */
+
+    public function import(): void
+    {
+        $this->validate([
+            'importFile' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls,csv',
+                'max:5120',
+            ],
+        ]);
+
         try {
 
-            $purchase = Purchase::findOrFail($purchaseId);
+            Excel::import(
+                new PurchaseImport(),
+                $this->importFile
+            );
+
+            $this->reset('importFile');
+
+            $this->resetPage();
+
+            session()->flash(
+                'message',
+                'Purchases imported successfully.'
+            );
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+
+            $messages = collect($e->errors())
+                ->flatten()
+                ->implode(' ');
+
+            session()->flash(
+                'error',
+                $messages
+            );
+
+        } catch (\Throwable $e) {
+
+            Log::error(
+                'Purchase Import Error',
+                [
+                    'message' => $e->getMessage(),
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                ]
+            );
+
+            session()->flash(
+                'error',
+                $e->getMessage()
+            );
+        }
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Delete
+    |--------------------------------------------------------------------------
+    */
+
+    public function deletePurchase(
+        int $purchaseId,
+        \App\Services\PurchaseService $purchaseService
+    ): void {
+
+        try {
+
+            $purchase = Purchase::findOrFail(
+                $purchaseId
+            );
 
             $purchaseService->delete($purchase);
 
@@ -131,4 +635,3 @@ new #[Title('Purchases')] class extends Component
     }
 };
 ?>
-
