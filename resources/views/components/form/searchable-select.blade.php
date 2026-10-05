@@ -100,15 +100,14 @@
                 this.closeDropdown();
             },
 
-            clear() {
-                this.selected = null;
+      clear() {
+    this.selected = '';
 
-                // تصفير Livewire فوراً
-                $wire.set(@js($model), null);
+    $wire.set(@js($model), '');
 
-                this.search = '';
-                this.closeDropdown();
-            }
+    this.search = '';
+    this.closeDropdown();
+}
         }"
 
         @click.outside="closeDropdown()"

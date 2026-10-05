@@ -57,49 +57,32 @@ new #[Title('Stock Transfer')] class extends Component
             ->orderBy('last_name')
             ->get();
     }
-
-    #[Computed]
-    public function warehouseProducts()
-    {
-        if (! $this->warehouseId) {
-            return collect();
-        }
-
-        return Product::query()
-            ->where('status', 'active')
-            ->whereHas('stocks', function (Builder $query) {
-                $query
-                    ->where(
-                        'stockable_type',
-                        Warehouse::class
-                    )
-                    ->where(
-                        'stockable_id',
-                        $this->warehouseId
-                    )
-                    ->where(
-                        'quantity',
-                        '>',
-                        0
-                    );
-            })
-            ->with([
-                'stocks' => function ($query) {
-                    $query
-                        ->where(
-                            'stockable_type',
-                            Warehouse::class
-                        )
-                        ->where(
-                            'stockable_id',
-                            $this->warehouseId
-                        );
-                },
-            ])
-            ->orderBy('name')
-            ->get();
+    
+#[Computed]
+public function warehouseProducts()
+{
+    if (! $this->warehouseId) {
+        return collect();
     }
 
+    return Product::query()
+        ->where('status', 'active')
+        ->whereHas('stocks', function (Builder $query) {
+            $query
+                ->where('stockable_type', Warehouse::class)
+                ->where('stockable_id', $this->warehouseId)
+                ->where('quantity', '>', 0);
+        })
+        ->with([
+            'stocks' => function ($query) {
+                $query
+                    ->where('stockable_type', Warehouse::class)
+                    ->where('stockable_id', $this->warehouseId);
+            },
+        ])
+        ->orderBy('name')
+        ->get();
+}
     public function updatedWarehouseId(): void
     {
         $this->items = [
@@ -111,6 +94,7 @@ new #[Title('Stock Transfer')] class extends Component
 
         $this->resetErrorBag();
     }
+    
 
     public function addItem(): void
     {
@@ -152,6 +136,7 @@ new #[Title('Stock Transfer')] class extends Component
         );
     }
 
+    
     public function submit(): void
     {
         $this->validate([
@@ -412,7 +397,8 @@ new #[Title('Stock Transfer')] class extends Component
 
                 {{-- Product --}}
                 <div class="md:col-span-6">
-   <x-form.searchable-select
+<div wire:key="product-select-{{ $index }}-{{ $warehouseId }}">
+    <x-form.searchable-select
         label="Product"
         model="items.{{ $index }}.product_id"
         :options="$this->warehouseProducts"
@@ -420,6 +406,7 @@ new #[Title('Stock Transfer')] class extends Component
         option-label="name"
         placeholder="Select Product"
     />
+</div>
 
                     @error("items.{$index}.product_id")
                     <p class="mt-1 text-sm text-red-600">

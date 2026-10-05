@@ -8,7 +8,7 @@ new #[Title('Order Details')] class extends Component
 {
     public Order $order;
 
-    public function mount(Order $order)
+    public function mount(Order $order): void
     {
         $this->order = $order->load([
             'user',
@@ -26,7 +26,6 @@ new #[Title('Order Details')] class extends Component
     <div class="flex items-center justify-between">
 
         <div>
-
             <h1 class="text-2xl font-bold text-gray-900">
                 Order #{{ $order->id }}
             </h1>
@@ -34,11 +33,9 @@ new #[Title('Order Details')] class extends Component
             <p class="mt-1 text-sm text-gray-500">
                 Order details.
             </p>
-
         </div>
 
         <div class="flex gap-2">
-
             <a
                 href="{{ route('orders.edit', $order) }}"
                 class="rounded-md bg-indigo-600 px-4 py-2 text-white"
@@ -52,42 +49,35 @@ new #[Title('Order Details')] class extends Component
             >
                 Back
             </a>
-
         </div>
 
     </div>
 
-    {{-- Header --}}
     <div class="mt-8 rounded-lg bg-white p-6 shadow">
 
         <div class="grid grid-cols-1 gap-6 md:grid-cols-4">
 
             <div>
-
                 <p class="text-sm text-gray-500">
                     Customer
                 </p>
 
                 <p class="mt-1 font-semibold">
-                    {{ $order->user->name ?? 'Walk-in Customer' }}
+                    {{ $order->user?->name ?? 'Walk-in Customer' }}
                 </p>
-
             </div>
 
             <div>
-
                 <p class="text-sm text-gray-500">
                     Employee
                 </p>
 
                 <p class="mt-1 font-semibold">
-                    {{ $order->employee->full_name ?? 'N/A' }}
+                    {{ $order->employee?->full_name ?? 'N/A' }}
                 </p>
-
             </div>
 
             <div>
-
                 <p class="text-sm text-gray-500">
                     Items
                 </p>
@@ -95,11 +85,9 @@ new #[Title('Order Details')] class extends Component
                 <p class="mt-1 font-semibold">
                     {{ $order->orderItems->count() }}
                 </p>
-
             </div>
 
             <div>
-
                 <p class="text-sm text-gray-500">
                     Date
                 </p>
@@ -107,14 +95,12 @@ new #[Title('Order Details')] class extends Component
                 <p class="mt-1 font-semibold">
                     {{ $order->created_at?->format('Y-m-d H:i') }}
                 </p>
-
             </div>
 
         </div>
 
     </div>
 
-    {{-- Items --}}
     <div class="mt-8 rounded-lg bg-white p-6 shadow">
 
         <h2 class="mb-6 text-lg font-semibold">
@@ -126,45 +112,27 @@ new #[Title('Order Details')] class extends Component
             <table class="min-w-full divide-y divide-gray-300">
 
                 <thead class="bg-gray-50">
-
                     <tr>
-
-                        <th class="px-3 py-3 text-left text-sm font-semibold">
-                            #
-                        </th>
-
-                        <th class="px-3 py-3 text-left text-sm font-semibold">
-                            Product
-                        </th>
-
-                        <th class="px-3 py-3 text-left text-sm font-semibold">
-                            Quantity
-                        </th>
-
-                        <th class="px-3 py-3 text-left text-sm font-semibold">
-                            Price
-                        </th>
-
-                        <th class="px-3 py-3 text-left text-sm font-semibold">
-                            Total
-                        </th>
-
+                        <th class="px-3 py-3 text-left text-sm font-semibold">#</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold">Product</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold">Quantity</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold">Price</th>
+                        <th class="px-3 py-3 text-left text-sm font-semibold">Total</th>
                     </tr>
-
                 </thead>
 
                 <tbody class="divide-y divide-gray-200">
 
                     @foreach($order->orderItems as $index => $item)
 
-                        <tr>
+                        <tr wire:key="order-item-{{ $item->id }}">
 
                             <td class="px-3 py-4 text-sm">
                                 {{ $index + 1 }}
                             </td>
 
                             <td class="px-3 py-4 text-sm font-medium">
-                                {{ $item->product->name ?? 'N/A' }}
+                                {{ $item->product?->name ?? 'N/A' }}
                             </td>
 
                             <td class="px-3 py-4 text-sm">

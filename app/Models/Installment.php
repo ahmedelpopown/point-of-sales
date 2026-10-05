@@ -15,9 +15,10 @@ class Installment extends Model
         'remaining_amount',
         'start_date',
         'installment_plan_id',
-        'order_id',
+        'order_id','name',
+        'months_count','interest_rate',
     ];
-
+ 
     protected $casts = [
         'total_with_interest' => 'decimal:2',
         'down_payment' => 'decimal:2',
