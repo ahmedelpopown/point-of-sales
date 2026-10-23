@@ -1,6 +1,6 @@
+
 @extends('layout.app')
 
 @section('content')
-Home
-
+    <livewire:dashboard />
 @endsection

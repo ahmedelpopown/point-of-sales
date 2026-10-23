@@ -26,21 +26,39 @@ new #[Title('Installment Details')] class extends Component
         $this->paymentDate = now()->format('Y-m-d');
     }
 
-    public function addPayment(
-        InstallmentService $service
-    ) {
-        $this->validate([
+
+    public function addPayment(InstallmentService $service): void
+    {
+        $this->installment->refresh();
+
+        $this->installment->load([
+            'order',
+            'installmentPlan',
+            'payments',
+        ]);
+
+        $remainingAmount = (float) $this->installment->remaining_amount;
+
+        if ($remainingAmount <= 0) {
+            session()->flash(
+                'error',
+                'This installment has already been fully paid.'
+            );
+
+            return;
+        }
+
+        $validated = $this->validate([
             'paymentAmount' => [
                 'required',
                 'numeric',
                 'min:0.01',
+                'max:' . $remainingAmount,
             ],
-
             'paymentMethod' => [
                 'required',
                 'in:cash,card,bank_transfer',
             ],
-
             'paymentDate' => [
                 'required',
                 'date',
@@ -48,12 +66,11 @@ new #[Title('Installment Details')] class extends Component
         ]);
 
         try {
-
             $service->addPayment(
                 installment: $this->installment,
-                amount: (float) $this->paymentAmount,
-                method: $this->paymentMethod,
-                paymentDate: $this->paymentDate,
+                amount: (float) $validated['paymentAmount'],
+                method: $validated['paymentMethod'],
+                paymentDate: $validated['paymentDate'],
             );
 
             $this->installment->refresh();
@@ -64,20 +81,18 @@ new #[Title('Installment Details')] class extends Component
                 'payments',
             ]);
 
-            $this->paymentAmount = '';
+            $this->reset('paymentAmount');
 
             session()->flash(
                 'message',
                 'Payment recorded successfully.'
             );
-
-        } catch (\Throwable $e) {
-
-            report($e);
+        } catch (\Throwable $exception) {
+            report($exception);
 
             session()->flash(
                 'error',
-                $e->getMessage()
+                'Unable to record payment. Please try again.'
             );
         }
     }
@@ -102,17 +117,17 @@ new #[Title('Installment Details')] class extends Component
 
         <div class="flex gap-2">
 
+            @if ($installment->payments->isEmpty())
             <a
                 href="{{ route('installments.edit', $installment) }}"
-                class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white"
-            >
+                class="rounded-md bg-indigo-600 px-4 py-2 text-sm text-white">
                 Edit
             </a>
+            @endif
 
             <a
                 href="{{ route('installments.index') }}"
-                class="rounded-md border border-gray-300 px-4 py-2 text-sm"
-            >
+                class="rounded-md border border-gray-300 px-4 py-2 text-sm">
                 Back
             </a>
 
@@ -122,21 +137,21 @@ new #[Title('Installment Details')] class extends Component
 
     @if(session()->has('message'))
 
-        <div class="mt-4 rounded-md bg-green-50 p-4">
-            <p class="text-sm text-green-800">
-                {{ session('message') }}
-            </p>
-        </div>
+    <div class="mt-4 rounded-md bg-green-50 p-4">
+        <p class="text-sm text-green-800">
+            {{ session('message') }}
+        </p>
+    </div>
 
     @endif
 
     @if(session()->has('error'))
 
-        <div class="mt-4 rounded-md bg-red-50 p-4">
-            <p class="text-sm text-red-800">
-                {{ session('error') }}
-            </p>
-        </div>
+    <div class="mt-4 rounded-md bg-red-50 p-4">
+        <p class="text-sm text-red-800">
+            {{ session('error') }}
+        </p>
+    </div>
 
     @endif
 
@@ -253,106 +268,102 @@ new #[Title('Installment Details')] class extends Component
     {{-- Add Payment --}}
     @if($installment->remaining_amount > 0)
 
-        <div class="mt-8 rounded-lg bg-white p-6 shadow">
+    <div class="mt-8 rounded-lg bg-white p-6 shadow">
 
-            <h2 class="mb-5 text-lg font-semibold">
-                Add Payment
-            </h2>
+        <h2 class="mb-5 text-lg font-semibold">
+            Add Payment
+        </h2>
 
-            <form wire:submit="addPayment">
+        <form wire:submit="addPayment">
 
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-4">
 
-                    <div>
+                <div>
 
-                        <label class="block text-sm font-medium">
-                            Amount
-                        </label>
+                    <label class="block text-sm font-medium">
+                        Amount
+                    </label>
 
-                        <input
-                            wire:model="paymentAmount"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            max="{{ $installment->remaining_amount }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
-                        >
+                    <input
+                        wire:model="paymentAmount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        max="{{ $installment->remaining_amount }}"
+                        class="mt-1 block w-full rounded-lg border-gray-300">
 
-                        @error('paymentAmount')
-                            <p class="mt-1 text-sm text-red-600">
-                                {{ $message }}
-                            </p>
-                        @enderror
-
-                    </div>
-
-                    <div>
-
-                        <label class="block text-sm font-medium">
-                            Method
-                        </label>
-
-                        <select
-                            wire:model="paymentMethod"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
-                        >
-
-                            <option value="cash">
-                                Cash
-                            </option>
-
-                            <option value="card">
-                                Card
-                            </option>
-
-                            <option value="bank_transfer">
-                                Bank Transfer
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                    <div>
-
-                        <label class="block text-sm font-medium">
-                            Payment Date
-                        </label>
-
-                        <input
-                            wire:model="paymentDate"
-                            type="date"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
-                        >
-
-                    </div>
-
-                    <div class="flex items-end">
-
-                        <button
-                            type="submit"
-                            class="w-full rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700"
-                        >
-                            Add Payment
-                        </button>
-
-                    </div>
+                    @error('paymentAmount')
+                    <p class="mt-1 text-sm text-red-600">
+                        {{ $message }}
+                    </p>
+                    @enderror
 
                 </div>
 
-            </form>
+                <div>
 
-        </div>
+                    <label class="block text-sm font-medium">
+                        Method
+                    </label>
+
+                    <select
+                        wire:model="paymentMethod"
+                        class="mt-1 block w-full rounded-lg border-gray-300">
+
+                        <option value="cash">
+                            Cash
+                        </option>
+
+                        <option value="card">
+                            Card
+                        </option>
+
+                        <option value="bank_transfer">
+                            Bank Transfer
+                        </option>
+
+                    </select>
+
+                </div>
+
+                <div>
+
+                    <label class="block text-sm font-medium">
+                        Payment Date
+                    </label>
+
+                    <input
+                        wire:model="paymentDate"
+                        type="date"
+                        class="mt-1 block w-full rounded-lg border-gray-300">
+
+                </div>
+
+                <div class="flex items-end">
+
+                    <button
+                        type="submit"
+                        class="w-full rounded-lg bg-green-600 px-4 py-2 text-white hover:bg-green-700">
+                        Add Payment
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
 
     @else
 
-        <div class="mt-8 rounded-lg bg-green-50 p-6">
+    <div class="mt-8 rounded-lg bg-green-50 p-6">
 
-            <p class="font-semibold text-green-800">
-                This installment has been fully paid ✅
-            </p>
+        <p class="font-semibold text-green-800">
+            This installment has been fully paid ✅
+        </p>
 
-        </div>
+    </div>
 
     @endif
 
@@ -395,38 +406,37 @@ new #[Title('Installment Details')] class extends Component
 
                     @forelse($installment->payments as $index => $payment)
 
-                        <tr>
+                    <tr>
 
-                            <td class="px-3 py-4 text-sm">
-                                {{ $index + 1 }}
-                            </td>
+                        <td class="px-3 py-4 text-sm">
+                            {{ $index + 1 }}
+                        </td>
 
-                            <td class="px-3 py-4 text-sm font-semibold">
-                                {{ number_format($payment->amount, 2) }}
-                            </td>
+                        <td class="px-3 py-4 text-sm font-semibold">
+                            {{ number_format($payment->amount, 2) }}
+                        </td>
 
-                            <td class="px-3 py-4 text-sm">
-                                {{ ucfirst(str_replace('_', ' ', $payment->method)) }}
-                            </td>
+                        <td class="px-3 py-4 text-sm">
+                            {{ ucfirst(str_replace('_', ' ', $payment->method)) }}
+                        </td>
 
-                            <td class="px-3 py-4 text-sm">
-                                {{ $payment->payment_date?->format('Y-m-d') }}
-                            </td>
+                        <td class="px-3 py-4 text-sm">
+                            {{ $payment->payment_date?->format('Y-m-d') }}
+                        </td>
 
-                        </tr>
+                    </tr>
 
                     @empty
 
-                        <tr>
+                    <tr>
 
-                            <td
-                                colspan="4"
-                                class="px-3 py-8 text-center text-sm text-gray-500"
-                            >
-                                No payments yet.
-                            </td>
+                        <td
+                            colspan="4"
+                            class="px-3 py-8 text-center text-sm text-gray-500">
+                            No payments yet.
+                        </td>
 
-                        </tr>
+                    </tr>
 
                     @endforelse
 

@@ -38,6 +38,7 @@
 @endpush('script')
 
 <div class="content-wrapper">
+ @include('layouts.partials.control-sidebar')
  
   <section class="content">
   {{ $slot }}

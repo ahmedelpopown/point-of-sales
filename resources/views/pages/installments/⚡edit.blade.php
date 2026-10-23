@@ -40,59 +40,64 @@ new #[Title('Edit Installment')] class extends Component
             ->get();
     }
 
-    public function save(
-        InstallmentService $service
-    ) {
-        $this->validate([
-            'installment_plan_id' => [
-                'required',
-                'exists:installment_plans,id',
-            ],
+   
+public function save(InstallmentService $service): void
+{
+    if ($this->installment->payments()->exists()) {
+        session()->flash(
+            'error',
+            'This installment already has payments and cannot be edited.'
+        );
 
-            'down_payment' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
-
-            'start_date' => [
-                'required',
-                'date',
-            ],
-        ]);
-
-        try {
-
-            $plan = InstallmentPlan::findOrFail(
-                $this->installment_plan_id
-            );
-
-            $service->update(
-                installment: $this->installment,
-                plan: $plan,
-                downPayment: (float) $this->down_payment,
-                startDate: $this->start_date,
-            );
-
-            session()->flash(
-                'message',
-                'Installment updated successfully.'
-            );
-
-            return $this->redirect(
-                route('installments.index')
-            );
-
-        } catch (\Throwable $e) {
-
-            report($e);
-
-            session()->flash(
-                'error',
-                $e->getMessage()
-            );
-        }
+        return;
     }
+
+    $validated = $this->validate([
+        'installment_plan_id' => [
+            'required',
+            'integer',
+            'exists:installment_plans,id',
+        ],
+        'down_payment' => [
+            'required',
+            'numeric',
+            'min:0',
+        ],
+        'start_date' => [
+            'required',
+            'date',
+        ],
+    ]);
+
+    try {
+        $plan = InstallmentPlan::findOrFail(
+            $validated['installment_plan_id']
+        );
+
+        $service->update(
+            installment: $this->installment,
+            plan: $plan,
+            downPayment: (float) $validated['down_payment'],
+            startDate: $validated['start_date'],
+        );
+
+        session()->flash(
+            'message',
+            'Installment updated successfully.'
+        );
+
+        $this->redirect(route('installments.index'));
+
+    } catch (\Throwable $exception) {
+        report($exception);
+
+        session()->flash(
+            'error',
+            'Unable to update this installment. Please try again.'
+        );
+    }
+}
+
 };
 ?>
 

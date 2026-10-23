@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\auth\EmployeeAuthController;
+use App\Http\Controllers\EmployeeNotificationController;
+use App\Http\Controllers\GlobalSearchController;
 use App\Http\Controllers\PurchasePaymentController;
 use App\Http\Controllers\SupplierPaymentController;
 use App\Livewire\RolePermissionManager;
@@ -278,6 +280,14 @@ Route::middleware('auth:employee')->group(function () {
                 ->name('show');
         });
 
+
+        Route::middleware('auth:employee')->group(function (): void {
+    Route::get('/global-search', GlobalSearchController::class)->name('global-search.index');
+    Route::post('/employee/notifications/{notification}/read', [EmployeeNotificationController::class, 'markRead'])
+        ->name('employee.notifications.read');
+    Route::post('/employee/notifications/read-all', [EmployeeNotificationController::class, 'markAllRead'])
+        ->name('employee.notifications.read-all');
+});
 
     /*
     |--------------------------------------------------------------------------

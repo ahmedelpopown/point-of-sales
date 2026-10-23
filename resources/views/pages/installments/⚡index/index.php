@@ -1,3 +1,4 @@
+
 <?php
 
 use App\Models\Installment;
@@ -11,100 +12,114 @@ new #[Title('Installments')] class extends Component
 {
     use WithPagination;
 
-    public $search = '';
+    private const SORTABLE_FIELDS = [
+        'id',
+        'total_with_interest',
+        'remaining_amount',
+        'start_date',
+        'created_at',
+    ];
 
-    public $perPage = 10;
+    public string $search = '';
 
-    public $sortField = 'created_at';
+    public int $perPage = 10;
 
-    public $sortDirection = 'desc';
+    public string $sortField = 'created_at';
+
+    public string $sortDirection = 'desc';
 
     #[Computed]
     public function installments()
     {
+        $sortField = in_array(
+            $this->sortField,
+            self::SORTABLE_FIELDS,
+            true
+        )
+            ? $this->sortField
+            : 'created_at';
+
+        $sortDirection = in_array(
+            strtolower($this->sortDirection),
+            ['asc', 'desc'],
+            true
+        )
+            ? strtolower($this->sortDirection)
+            : 'desc';
+
+        $perPage = max(1, min($this->perPage, 100));
+
         return Installment::query()
             ->with([
                 'order',
                 'installmentPlan',
             ])
-            ->when($this->search, function ($query) {
-
-                $search = '%' . $this->search . '%';
+            ->when(trim($this->search) !== '', function ($query) {
+                $search = '%' . trim($this->search) . '%';
 
                 $query->whereHas(
                     'installmentPlan',
-                    function ($q) use ($search) {
-                        $q->where(
-                            'name',
-                            'like',
-                            $search
-                        );
-                    }
+                    fn ($planQuery) => $planQuery->where(
+                        'name',
+                        'like',
+                        $search
+                    )
                 );
             })
-            ->orderBy(
-                $this->sortField,
-                $this->sortDirection
-            )
-            ->paginate($this->perPage);
+            ->orderBy($sortField, $sortDirection)
+            ->paginate($perPage);
     }
 
-    public function updatedSearch()
+    public function updatedSearch(): void
     {
         $this->resetPage();
     }
 
-    public function sortBy($field)
+    public function updatedPerPage(): void
     {
-        $allowed = [
-            'id',
-            'total_with_interest',
-            'remaining_amount',
-            'start_date',
-            'created_at',
-        ];
+        $this->resetPage();
+    }
 
-        if (!in_array($field, $allowed)) {
+    public function sortBy(string $field): void
+    {
+        if (! in_array($field, self::SORTABLE_FIELDS, true)) {
             return;
         }
 
         if ($this->sortField === $field) {
-
             $this->sortDirection =
                 $this->sortDirection === 'asc'
                     ? 'desc'
                     : 'asc';
 
-        } else {
-
-            $this->sortField = $field;
-
-            $this->sortDirection = 'asc';
+            return;
         }
+
+        $this->sortField = $field;
+        $this->sortDirection = 'asc';
     }
 
     public function deleteInstallment(
-        $id,
+        int $id,
         InstallmentService $service
-    ) {
+    ): void {
         try {
-
             $installment = Installment::findOrFail($id);
 
             $service->delete($installment);
+
+            unset($this->installments);
 
             session()->flash(
                 'message',
                 'Installment deleted successfully.'
             );
-
-        } catch (\Throwable $e) {
-
-            report($e);
+        } catch (\Throwable $exception) {
+            report($exception);
 
             session()->flash(
                 'error',
-                $e->getMessage()
+                'Unable to delete this installment. Please try again.'
             );
         }
     }

@@ -10,38 +10,43 @@ new #[Title('Create Installment Plan')] class extends Component
     public int|string $months_count = '';
     public float|int $interest_rate = 0;
 
-    public function save(): void
-    {
-        $validated = $this->validate([
-            'name' => [
-                'required',
-                'string',
-                'max:255',
-                'unique:installment_plans,name',
-            ],
 
-            'months_count' => [
-                'required',
-                'integer',
-                'min:1',
-            ],
+public function save(): void
+{
+    $validated = $this->validate([
+        'name' => [
+            'required',
+            'string',
+            'max:255',
+            'unique:installment_plans,name',
+        ],
+        'months_count' => [
+            'required',
+            'integer',
+            'min:1',
+        ],
+        'interest_rate' => [
+            'required',
+            'numeric',
+            'min:0',
+        ],
+    ]);
 
-            'interest_rate' => [
-                'required',
-                'numeric',
-                'min:0',
-            ],
-        ]);
+    InstallmentPlan::create($validated);
 
-        InstallmentPlan::create($validated);
+    $this->reset([
+        'name',
+        'months_count',
+    ]);
 
-        session()->flash(
-            'message',
-            'Installment plan created successfully.'
-        );
+    $this->interest_rate = 0;
 
- 
-    }
+    session()->flash(
+        'message',
+        'Installment plan created successfully.'
+    );
+}
+
 };
 ?>
 
@@ -75,6 +80,13 @@ new #[Title('Create Installment Plan')] class extends Component
         </div>
 
     @endif
+    @if (session()->has('message'))
+    <div class="mt-6 rounded-xl bg-green-50 p-4">
+        <p class="text-sm text-green-800">
+            {{ session('message') }}
+        </p>
+    </div>
+@endif
 
 
     {{-- Form --}}

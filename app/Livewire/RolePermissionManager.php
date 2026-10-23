@@ -54,53 +54,54 @@ class RolePermissionManager extends Component
         }
     }
 
-    public function saveRole(): void
-    {
-        $validated = $this->validate([
-            'roleName' => [
-                'required',
-                'string',
-                'max:100',
-                Rule::unique('roles', 'name')
-                    ->ignore($this->roleId),
-            ],
-            'selectedPermissions' => ['array'],
-            'selectedPermissions.*' => [
-                'string',
-                Rule::exists('permissions', 'name')
-                    ->where('guard_name', 'employee'),
-            ],
-        ]);
+ 
+public function saveRole(): void
+{
+    $validated = $this->validate([
+        'roleName' => [
+            'required',
+            'string',
+            'max:100',
+            Rule::unique('roles', 'name')
+                ->where('guard_name', 'employee')
+                ->ignore($this->roleId),
+        ],
+        'selectedPermissions' => ['array'],
+        'selectedPermissions.*' => [
+            'string',
+            Rule::exists('permissions', 'name')
+                ->where('guard_name', 'employee'),
+        ],
+    ]);
 
-        DB::transaction(function () use ($validated) {
+    DB::transaction(function () use ($validated) {
+        $role = $this->roleId
+            ? Role::where('guard_name', 'employee')
+                ->findOrFail($this->roleId)
+            : new Role(['guard_name' => 'employee']);
 
-            if ($this->roleId) {
+        $role->name = $validated['roleName'];
+        $role->guard_name = 'employee';
+        $role->save();
 
-                $role = Role::findOrFail($this->roleId);
+        $permissions = Permission::query()
+            ->where('guard_name', 'employee')
+            ->whereIn('name', $validated['selectedPermissions'])
+            ->get();
 
-                $role->update([
-                    'name' => $validated['roleName'],
-                ]);
-            } else {
+        $role->syncPermissions($permissions);
+    });
 
-                $role = Role::create([
-                    'name' => $validated['roleName'],
-                    'guard_name' => 'web',
-                ]);
-            }
+    session()->flash(
+        'success',
+        $this->roleId
+            ? 'Role updated successfully.'
+            : 'Role created successfully.'
+    );
 
-            $role->syncPermissions($validated['selectedPermissions']);
-        });
+    $this->resetForm();
+}
 
-        session()->flash(
-            'success',
-            $this->roleId
-                ? 'Role updated successfully.'
-                : 'Role created successfully.'
-        );
-
-        $this->resetForm();
-    }
 
     public function editRole(int $roleId): void
     {

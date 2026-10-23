@@ -116,7 +116,7 @@
                         href="#"
                         class="nav-link {{ request()->routeIs('roles.*') ? 'active' : '' }}">
 
-                        <i class="nav-icon fas fa-box"></i>
+                        <i class="nav-icon fas fa-user-shield"></i>
 
                         <p>
                             Roles
@@ -128,7 +128,7 @@
 
                     <ul class="nav nav-treeview">
 
-                        {{-- All Products --}}
+                        {{-- All Roles --}}
 
                         @can('view roles')
 
@@ -151,9 +151,9 @@
                         @endcan
 
 
-                        {{-- Create Product --}}
+                        {{-- Create Role --}}
 
-                        @can('create role')
+                        @can('create roles')
 
                         <li class="nav-item">
 
@@ -662,10 +662,10 @@
                 {{-- ===================================================== --}}
 
                 @canany([
-                'view installments',
-                
-                'update installments',
-                'delete installments'
+                    'view installments',
+                    'create installments',
+                    'update installments',
+                    'delete installments'
                 ])
 
                 <li
@@ -708,7 +708,16 @@
 
                         @endcan
 
- 
+                        @can('create installments')
+                        <li class="nav-item">
+                            <a
+                                href="{{ route('installments.create') }}"
+                                class="nav-link {{ request()->routeIs('installments.create') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Create Installment</p>
+                            </a>
+                        </li>
+                        @endcan
 
                     </ul>
 
@@ -720,174 +729,74 @@
                 {{-- ===================================================== --}}
                 {{-- Stock --}}
                 {{-- ===================================================== --}}
-         
-@can('adjust stock')
 
-    <li
-        class="nav-item
-        {{ request()->routeIs('stock.*') ? 'menu-open' : '' }}"
-    >
-
-        <a
-            href="#"
-            class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}"
-        >
-
-            <i class="nav-icon fas fa-boxes"></i>
-
-            <p>
-                Stock
-                <i class="right fas fa-angle-left"></i>
-            </p>
-
-        </a>
-
-        <ul class="nav nav-treeview">
-
-            {{-- Stock Overview --}}
-            <li class="nav-item">
-
-                <a
-                    href="{{ route('stock.index') }}"
-                    class="nav-link {{ request()->routeIs('stock.index') ? 'active' : '' }}"
-                >
-
-                    <i class="far fa-circle nav-icon"></i>
-
-                    <p>
-                        Stock Overview
-                    </p>
-
-                </a>
-
-            </li>
-
-            {{-- Warehouses --}}
-            <li class="nav-item">
-
-                <a
-                    href="{{ route('stock.warehouses') }}"
-                    class="nav-link {{ request()->routeIs('stock.warehouses') ? 'active' : '' }}"
-                >
-
-                    <i class="far fa-circle nav-icon"></i>
-
-                    <p>
-                        Warehouses
-                    </p>
-
-                </a>
-
-            </li>
-
-            {{-- Shops --}}
-            <li class="nav-item">
-
-                <a
-                    href="{{ route('stock.shops') }}"
-                    class="nav-link {{ request()->routeIs('stock.shops') ? 'active' : '' }}"
-                >
-
-                    <i class="far fa-circle nav-icon"></i>
-
-                    <p>
-                        Shops
-                    </p>
-
-                </a>
-
-            </li>
-
-            {{-- Stock Movements --}}
-            <li class="nav-item">
-
-                <a
-                    href="{{ route('stock.stock-movements') }}"
-                    class="nav-link {{ request()->routeIs('stock.stock-movements') ? 'active' : '' }}"
-                >
-
-                    <i class="far fa-circle nav-icon"></i>
-
-                    <p>
-                        Stock Movements
-                    </p>
-
-                </a>
-
-            </li>
-
-            {{-- Transfers --}}
-            <li class="nav-item">
-
-                <a
-                    href="{{ route('stock.transfers') }}"
-                    class="nav-link {{ request()->routeIs('stock.transfers') ? 'active' : '' }}"
-                >
-
-                    <i class="far fa-circle nav-icon"></i>
-
-                    <p>
-                        Stock Transfers
-                    </p>
-
-                </a>
-
-            </li>
-
-        </ul>
-
-    </li>
-
-@endcan
-
-
-                
-                <!-- view stock adjst stock -->
-   {{-- Stock Movements --}}
-            @can('view stock movements')
-
-                <li class="nav-item">
+                @canany(['adjust stock', 'view stock movements', 'transfer stock'])
+                <li class="nav-item {{ request()->routeIs('stock.*') ? 'menu-open' : '' }}">
                     <a
-                        href="{{ route('stock.stock-movements') }}"
-                        class="nav-link
-                        {{ request()->routeIs('stock.movements') ? 'active' : '' }}"
-                    >
-
-                        <i class="far fa-circle nav-icon"></i>
-
+                        href="#"
+                        class="nav-link {{ request()->routeIs('stock.*') ? 'active' : '' }}">
+                        <i class="nav-icon fas fa-boxes"></i>
                         <p>
-                            Stock Movements
+                            Stock
+                            <i class="right fas fa-angle-left"></i>
                         </p>
-
                     </a>
 
+                    <ul class="nav nav-treeview">
+                        @can('adjust stock')
+                        <li class="nav-item">
+                            <a
+                                href="{{ route('stock.index') }}"
+                                class="nav-link {{ request()->routeIs('stock.index') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Stock Overview</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a
+                                href="{{ route('stock.warehouses') }}"
+                                class="nav-link {{ request()->routeIs('stock.warehouses') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Warehouses</p>
+                            </a>
+                        </li>
+
+                        <li class="nav-item">
+                            <a
+                                href="{{ route('stock.shops') }}"
+                                class="nav-link {{ request()->routeIs('stock.shops') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Shops</p>
+                            </a>
+                        </li>
+                        @endcan
+
+                        @can('view stock movements')
+                        <li class="nav-item">
+                            <a
+                                href="{{ route('stock.stock-movements') }}"
+                                class="nav-link {{ request()->routeIs('stock.stock-movements') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Stock Movements</p>
+                            </a>
+                        </li>
+                        @endcan
+
+                        @can('transfer stock')
+                        <li class="nav-item">
+                            <a
+                                href="{{ route('stock.transfers') }}"
+                                class="nav-link {{ request()->routeIs('stock.transfers') ? 'active' : '' }}">
+                                <i class="far fa-circle nav-icon"></i>
+                                <p>Stock Transfers</p>
+                            </a>
+                        </li>
+                        @endcan
+                    </ul>
                 </li>
+                @endcanany
 
-            @endcan
-
-
-            {{-- Stock Transfer --}}
-            @can('transfer stock')
-
-                <li class="nav-item">
-
-                    <a
-                        href="{{ route('stock.transfers') }}"
-                        class="nav-link
-                        {{ request()->routeIs('stock.transfers') ? 'active' : '' }}"
-                    >
-
-                        <i class="far fa-circle nav-icon"></i>
-
-                        <p>
-                            Stock Transfer
-                        </p>
-
-                    </a>
-
-                </li>
-
-            @endcan
                 {{-- ===================================================== --}}
                 {{-- Reports --}}
                 {{-- ===================================================== --}}
