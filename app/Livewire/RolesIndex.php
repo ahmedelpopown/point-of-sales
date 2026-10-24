@@ -10,14 +10,18 @@ use Spatie\Permission\Models\Role;
 
 class RolesIndex extends Component
 {
-    use WithBulkSelection;
     use WithPagination;
+    use WithBulkSelection;
 
     protected string $paginationTheme = 'bootstrap';
 
     public function getBulkVisibleIds(): array
     {
-        return $this->roles->getCollection()->pluck('id')->all();
+        return $this->roles
+            ->getCollection()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
     #[Computed]
@@ -25,7 +29,6 @@ class RolesIndex extends Component
     {
         return Role::query()
             ->where('guard_name', 'employee')
-            ->with('permissions')
             ->withCount('permissions')
             ->latest()
             ->paginate(10);
@@ -36,16 +39,58 @@ class RolesIndex extends Component
         $role = Role::query()
             ->where('guard_name', 'employee')
             ->findOrFail($roleId);
-        $role->delete();
-        $role->delete();
 
+        $role->delete();
         $this->selected = array_values(array_diff(
-            $this->selected,
+            array_map('intval', $this->selected),
             [$roleId]
         ));
-        $this->syncBulkSelection();
 
+        $this->refreshAfterDelete();
         session()->flash('success', 'Role deleted successfully.');
+    }
+
+    public function deleteSelected(): void
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $this->selected),
+            fn (int $id): bool => $id > 0
+        )));
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one role first.');
+            return;
+        }
+
+        $roles = Role::query()
+            ->where('guard_name', 'employee')
+            ->whereIn('id', $ids)
+            ->get();
+
+        $deletedCount = 0;
+
+        // Delete individually so Eloquent model events are not bypassed.
+        foreach ($roles as $role) {
+            $role->delete();
+            $deletedCount++;
+        }
+
+        $this->clearBulkSelection();
+        $this->refreshAfterDelete();
+
+        session()->flash('success', $deletedCount . ' role(s) deleted successfully.');
+    }
+
+    private function refreshAfterDelete(): void
+    {
+        unset($this->roles);
+
+        if ($this->roles->isEmpty() && $this->getPage() > 1) {
+            $this->previousPage();
+            unset($this->roles);
+        }
+
+        $this->syncBulkSelection();
     }
 
     public function render()

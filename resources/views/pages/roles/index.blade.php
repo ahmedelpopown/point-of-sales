@@ -1,232 +1,116 @@
 <div class="container-fluid py-4">
-
-    {{-- Success Message --}}
     @if (session()->has('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-
-            <button
-                type="button"
-                class="btn-close"
-                data-bs-dismiss="alert"
-            ></button>
-        </div>
+        <div class="alert alert-success">{{ session('success') }}</div>
     @endif
 
-    {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4">
-
-        <div>
-            <h4 class="mb-1">
-                Roles
-            </h4>
-
-            <p class="text-muted mb-0">
-                Manage employee roles and their permissions
-            </p>
-        </div>
-
-        <a
-            href="{{ route('admin.roles.permissions') }}"
-            class="btn btn-primary"
-        >
-            + Create Role
-        </a>
-
-    </div>
-
-    @if(count($selected) > 0)
-        <div class="mt-3">
-            <x-ui.bulk-actions :count="count($selected)" item-label="role" items-label="roles">
-                <x-ui.action-button wire:click="clearBulkSelection">Clear selection</x-ui.action-button>
-            </x-ui.bulk-actions>
-        </div>
+    @if (session()->has('error'))
+        <div class="alert alert-danger">{{ session('error') }}</div>
     @endif
 
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+            <h3 class="card-title mb-0">Roles</h3>
+            <a href="{{ route('admin.roles.permissions') }}" class="btn btn-primary btn-sm">
+                <i class="fas fa-user-shield mr-1"></i> Manage Roles & Permissions
+            </a>
+        </div>
 
-    {{-- Roles Table --}}
-    <div class="card shadow-sm">
+        @if (count($selected) > 0)
+            <div class="card-body pb-0">
+                <div class="d-flex align-items-center justify-content-between flex-wrap border rounded p-3">
+                    <span class="font-weight-bold mb-2 mb-md-0">
+                        {{ count($selected) }} role(s) selected
+                    </span>
+                    <div class="d-flex flex-wrap" style="gap: .5rem">
+                        <button
+                            type="button"
+                            class="btn btn-outline-secondary btn-sm"
+                            wire:click="clearBulkSelection"
+                        >
+                            Clear Selection
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-danger btn-sm"
+                            wire:click="deleteSelected"
+                            wire:confirm="Are you sure you want to delete the selected roles?"
+                            wire:loading.attr="disabled"
+                            wire:target="deleteSelected"
+                        >
+                            <span wire:loading.remove wire:target="deleteSelected">Delete Selected</span>
+                            <span wire:loading wire:target="deleteSelected">Deleting...</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        @endif
 
-        <div class="card-body p-0">
-
-            <div class="table-responsive">
-
-                <table class="table table-hover align-middle mb-0">
-
-                    <thead class="table-light">
-
-                        <tr>
-
-                            <th class="w-12">
+        <div class="card-body table-responsive p-0">
+            <table class="table table-hover text-nowrap mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 44px">
+                            <input
+                                type="checkbox"
+                                aria-label="Select all roles on this page"
+                                wire:model.live="selectAll"
+                            >
+                        </th>
+                        <th>Role</th>
+                        <th>Permissions</th>
+                        <th>Created</th>
+                        <th class="text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($roles as $role)
+                        <tr wire:key="role-row-{{ $role->id }}">
+                            <td>
                                 <input
                                     type="checkbox"
-                                    wire:model.live="selectAll"
-                                    aria-label="Select all roles on this page"
-                                    class="form-check-input"
+                                    aria-label="Select {{ $role->name }}"
+                                    value="{{ $role->id }}"
+                                    wire:model.live="selected"
                                 >
-                            </th>
-
-                            <th>#</th>
-
-                            <th>
-                                Role
-                            </th>
-
-                            <th>
-                                Permissions
-                            </th>
-
-                            <th>
-                                Guard
-                            </th>
-
-                            <th class="text-end">
-                                Actions
-                            </th>
-
+                            </td>
+                            <td class="align-middle">
+                                <strong>{{ $role->name }}</strong>
+                            </td>
+                            <td class="align-middle">
+                                <span class="badge badge-info">{{ $role->permissions_count }}</span>
+                            </td>
+                            <td class="align-middle">{{ $role->created_at?->format('Y-m-d') ?? 'N/A' }}</td>
+                            <td class="text-right align-middle">
+                                <a
+                                    href="{{ route('admin.roles.permissions') }}"
+                                    class="btn btn-outline-primary btn-xs"
+                                    title="Manage roles and permissions"
+                                >
+                                    <i class="fas fa-edit"></i> Manage
+                                </a>
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-danger btn-xs"
+                                    wire:click="deleteRole({{ $role->id }})"
+                                    wire:confirm="Are you sure you want to delete the role '{{ $role->name }}'?"
+                                >
+                                    <i class="fas fa-trash"></i> Delete
+                                </button>
+                            </td>
                         </tr>
-
-                    </thead>
-
-
-                    <tbody>
-
-                        @forelse ($roles as $role)
-
-                            <tr>
-
-                                <td>
-                                    <input
-                                        type="checkbox"
-                                        wire:model.live="selected"
-                                        value="{{ $role->id }}"
-                                        aria-label="Select role {{ $role->name }}"
-                                        class="form-check-input"
-                                    >
-                                </td>
-
-                                {{-- ID --}}
-                                <td>
-                                    {{ $role->id }}
-                                </td>
-
-
-                                {{-- Role Name --}}
-                                <td>
-
-                                    <div class="fw-semibold">
-                                        {{ $role->name }}
-                                    </div>
-
-                                    <small class="text-muted">
-                                        Created:
-                                        {{ $role->created_at?->format('Y-m-d') }}
-                                    </small>
-
-                                </td>
-
-
-                                {{-- Permissions --}}
-                                <td>
-
-                                    <div class="mb-2">
-
-                                        <span class="badge bg-primary">
-                                            {{ $role->permissions_count }}
-                                            permissions
-                                        </span>
-
-                                    </div>
-
-                                    <div class="d-flex flex-wrap gap-1">
-
-                                        @foreach ($role->permissions as $permission)
-
-                                            <span class="badge bg-light text-dark border">
-                                                {{ $permission->name }}
-                                            </span>
-
-                                        @endforeach
-
-                                    </div>
-
-                                </td>
-
-
-                                {{-- Guard --}}
-                                <td>
-
-                                    <span class="badge bg-secondary">
-                                        {{ $role->guard_name }}
-                                    </span>
-
-                                </td>
-
-
-                                {{-- Actions --}}
-                                <td class="text-end">
-
-                                    <div class="d-flex justify-content-end gap-2">
-
-                                        <a
-                                            href="{{ route('admin.roles.permissions', ['role' => $role->id]) }}"
-                                            class="btn btn-sm btn-outline-primary"
-                                        >
-                                            Edit
-                                        </a>
-
-                                        <button
-                                            type="button"
-                                            class="btn btn-sm btn-outline-danger"
-                                            wire:click="deleteRole({{ $role->id }})"
-                                            wire:confirm="Are you sure you want to delete this role?"
-                                        >
-                                            Delete
-                                        </button>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                        @empty
-
-                            <tr>
-
-                                <td
-                                    colspan="6"
-                                    class="text-center py-5"
-                                >
-
-                                    <div class="text-muted">
-                                        No roles found.
-                                    </div>
-
-                                    <a
-                                        href="{{ route('admin.roles.permissions') }}"
-                                        class="btn btn-primary mt-3"
-                                    >
-                                        Create First Role
-                                    </a>
-
-                                </td>
-
-                            </tr>
-
-                        @endforelse
-
-                    </tbody>
-
-                </table>
-
-            </div>
-
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-center text-muted py-4">No employee roles found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
 
-
-        {{-- Pagination --}}
-
+        @if ($roles->hasPages())
+            <div class="card-footer clearfix">
+                {{ $roles->links() }}
+            </div>
+        @endif
     </div>
-
 </div>
