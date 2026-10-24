@@ -426,6 +426,15 @@
             </div>
 
 
+            @if(count($selected) > 0)
+                <div class="border-b border-slate-100 px-5 py-4">
+                    <x-ui.bulk-actions :count="count($selected)" item-label="purchase" items-label="purchases">
+                        <x-ui.action-button wire:click="exportSelectedExcel" loading-target="exportSelectedExcel" class="flex-1 sm:flex-none">Export Selected Excel</x-ui.action-button>
+                        <x-ui.action-button wire:click="clearBulkSelection" class="flex-1 sm:flex-none">Clear selection</x-ui.action-button>
+                    </x-ui.bulk-actions>
+                </div>
+            @endif
+
             {{-- Table --}}
             <div class="overflow-x-auto">
 
@@ -470,6 +479,9 @@
 
                     emptyText="No purchases found."
 
+                    :selectable="true"
+                    selected-model="selected"
+                    select-all-model="selectAll"
                     :sortField="$sortField"
                     :sortDirection="$sortDirection"
 

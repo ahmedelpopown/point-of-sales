@@ -168,6 +168,12 @@
             >
                 Delete Selected
             </button>
+            <button
+                wire:click="clearBulkSelection"
+                class="inline-flex min-h-10 items-center rounded-xl border border-indigo-200 bg-white px-4 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
+            >
+                Clear selection
+            </button>
 
         </x-ui.bulk-actions>
 

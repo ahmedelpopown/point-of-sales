@@ -2,6 +2,7 @@
 
 use App\Models\Shop;
 use App\Models\Stock;
+use App\Livewire\Concerns\WithBulkSelection;
 use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 new #[Title('Shop Stock')] class extends Component
 {
     use WithPagination;
+    use WithBulkSelection;
 
     public string $search = '';
 
@@ -23,6 +25,11 @@ new #[Title('Shop Stock')] class extends Component
     public string $sortDirection = 'asc';
 
     public int $perPage = 10;
+
+    public function getBulkVisibleIds(): array
+    {
+        return $this->stocks->getCollection()->pluck('id')->all();
+    }
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -173,21 +180,31 @@ new #[Title('Shop Stock')] class extends Component
         }
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedShopId(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedLowStockOnly(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function resetFilters(): void
@@ -199,6 +216,7 @@ new #[Title('Shop Stock')] class extends Component
         ]);
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function stockStatus(Stock $stock): string
@@ -343,6 +361,14 @@ new #[Title('Shop Stock')] class extends Component
 
     </div>
 
+    @if(count($selected) > 0)
+        <div class="mt-6">
+            <x-ui.bulk-actions :count="count($selected)" item-label="stock record" items-label="stock records">
+                <x-ui.action-button wire:click="clearBulkSelection">Clear selection</x-ui.action-button>
+            </x-ui.bulk-actions>
+        </div>
+    @endif
+
     {{-- Table --}}
     <div class="mt-8 flex flex-col">
 
@@ -357,6 +383,15 @@ new #[Title('Shop Stock')] class extends Component
                         <thead class="bg-gray-50">
 
                             <tr>
+
+                                <th class="w-12 px-3 py-3.5">
+                                    <input
+                                        type="checkbox"
+                                        wire:model.live="selectAll"
+                                        aria-label="Select all shop stock records on this page"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    >
+                                </th>
 
                                 <th
                                     wire:click="sortBy('product')"
@@ -413,6 +448,16 @@ new #[Title('Shop Stock')] class extends Component
                                 >
 
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                        <input
+                                            type="checkbox"
+                                            wire:model.live="selected"
+                                            value="{{ $stock->id }}"
+                                            aria-label="Select shop stock record {{ $stock->id }}"
+                                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                        >
+                                    </td>
+
+                                    <td class="whitespace-nowrap px-3 py-4 text-sm">
 
                                         <div class="font-medium text-gray-900">
                                             {{ $stock->product->name }}
@@ -451,7 +496,7 @@ new #[Title('Shop Stock')] class extends Component
                                 <tr>
 
                                     <td
-                                        colspan="5"
+                                        colspan="6"
                                         class="px-3 py-8 text-center text-sm text-gray-500"
                                     >
                                         No shop stock records found.

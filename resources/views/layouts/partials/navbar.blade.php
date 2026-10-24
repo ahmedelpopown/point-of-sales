@@ -40,12 +40,6 @@
             </a>
         </li>
 
-        @if (Route::has('dashboard'))
-            <li class="nav-item d-none d-md-inline-block">
-                <a href="{{ route('dashboard') }}" class="nav-link">Home</a>
-            </li>
-        @endif
-
         @if (Route::has('contact.index'))
             <li class="nav-item d-none d-lg-inline-block">
                 <a href="{{ route('contact.index') }}" class="nav-link">Contact</a>
@@ -212,11 +206,5 @@
             </a>
         </li>
 
-        {{-- AdminLTE control sidebar widget --}}
-        <li class="nav-item">
-            <a class="nav-link" data-widget="control-sidebar" data-slide="true" href="#" role="button" aria-label="Quick tools" title="Quick tools">
-                <i class="fas fa-th-large" aria-hidden="true"></i>
-            </a>
-        </li>
     </ul>
 </nav>

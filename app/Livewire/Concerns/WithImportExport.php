@@ -9,7 +9,6 @@ trait WithImportExport
 {
     public $importFile;
 
-
     /*
     |--------------------------------------------------------------------------
     | Export PDF
@@ -28,11 +27,10 @@ trait WithImportExport
         );
 
         return response()->streamDownload(
-            fn () => print($pdf->stream()),
+            fn () => print ($pdf->stream()),
             $this->fileName('pdf')
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -42,9 +40,17 @@ trait WithImportExport
 
     public function exportSelected()
     {
+        $ids = $this->selectedIds();
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one item to export.');
+
+            return null;
+        }
+
         $items = $this->modelClass()::whereIn(
             'id',
-            $this->selected
+            $ids
         )->get();
 
         $pdf = Pdf::loadView(
@@ -55,11 +61,10 @@ trait WithImportExport
         );
 
         return response()->streamDownload(
-            fn () => print($pdf->stream()),
+            fn () => print ($pdf->stream()),
             $this->fileName('pdf')
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -79,7 +84,6 @@ trait WithImportExport
         );
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Export Selected Excel
@@ -88,9 +92,17 @@ trait WithImportExport
 
     public function exportSelectedExcel()
     {
+        $ids = $this->selectedIds();
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one item to export.');
+
+            return null;
+        }
+
         $items = $this->modelClass()::whereIn(
             'id',
-            $this->selected
+            $ids
         )->get();
 
         $exportClass = $this->exportClass();
@@ -100,7 +112,6 @@ trait WithImportExport
             $this->fileName('xlsx')
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -124,7 +135,7 @@ trait WithImportExport
             $importClass = $this->importClass();
 
             Excel::import(
-                new $importClass(),
+                new $importClass,
                 $this->importFile
             );
 
@@ -144,7 +155,7 @@ trait WithImportExport
             session()->flash(
                 'error',
                 'There was an error importing the file: '
-                . $e->getMessage()
+                .$e->getMessage()
             );
 
             return $this->redirectRoute(
@@ -152,7 +163,6 @@ trait WithImportExport
             );
         }
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -163,10 +173,17 @@ trait WithImportExport
     protected function fileName(string $extension): string
     {
         return $this->resourceName()
-            . '-' . date('Y-m-d')
-            . '.' . $extension;
+            .'-'.date('Y-m-d')
+            .'.'.$extension;
     }
 
+    private function selectedIds(): array
+    {
+        return array_values(array_unique(array_filter(
+            array_map('intval', $this->selected),
+            static fn (int $id): bool => $id > 0
+        )));
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -191,6 +208,6 @@ trait WithImportExport
     protected function importSuccessMessage(): string
     {
         return ucfirst($this->resourceName())
-            . ' imported successfully.';
+            .' imported successfully.';
     }
 }

@@ -1,558 +1,235 @@
-<div>
-
-    {{-- Flash Message --}}
-    @if (session()->has('message'))
-        <div class="mb-4 rounded-lg bg-green-50 p-4 text-sm text-green-700">
-            {{ session('message') }}
-        </div>
+<div class="space-y-6">
+    {{-- Flash messages --}}
+    @if(session()->has('message'))
+        <x-ui.alert type="success" :message="session('message')" />
     @endif
 
-    @if (session()->has('error'))
-        <div class="mb-4 rounded-lg bg-red-50 p-4 text-sm text-red-700">
-            {{ session('error') }}
-        </div>
+    @if(session()->has('error'))
+        <x-ui.alert type="error" :message="session('error')" />
     @endif
 
-
-    {{-- Purchase Summary --}}
+    {{-- Purchase summary --}}
     <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
-
-        {{-- Total --}}
-        <div class="rounded-lg border bg-white p-5 shadow-sm">
-            <p class="text-sm text-gray-500">
-                Total Purchase
-            </p>
-
-            <p class="mt-2 text-2xl font-semibold text-gray-900">
-                {{ number_format($purchase->total_price, 2) }}
-                EGP
-            </p>
-        </div>
-
-
-        {{-- Paid --}}
-        <div class="rounded-lg border bg-white p-5 shadow-sm">
-            <p class="text-sm text-gray-500">
-                Paid
-            </p>
-
-            <p class="mt-2 text-2xl font-semibold text-green-600">
-                {{ number_format($this->paidAmount, 2) }}
-                EGP
-            </p>
-        </div>
-
-
-        {{-- Remaining --}}
-        <div class="rounded-lg border bg-white p-5 shadow-sm">
-
-            <p class="text-sm text-gray-500">
-                Remaining
-            </p>
-
-            <p class="mt-2 text-2xl font-semibold
-                {{ $this->remainingAmount > 0
-                    ? 'text-red-600'
-                    : 'text-green-600' }}">
-                {{ number_format($this->remainingAmount, 2) }}
-                EGP
-            </p>
-
-        </div>
-
+        <x-ui.stat-card
+            label="Total Purchase"
+            :value="number_format((float) $purchase->total_price, 2) . ' EGP'"
+        />
+        <x-ui.stat-card
+            label="Paid"
+            :value="number_format((float) $this->paidAmount, 2) . ' EGP'"
+            value-class="text-emerald-600"
+        />
+        <x-ui.stat-card
+            label="Remaining"
+            :value="number_format((float) $this->remainingAmount, 2) . ' EGP'"
+            :value-class="$this->remainingAmount > 0 ? 'text-red-600' : 'text-emerald-600'"
+        />
     </div>
 
-
-    {{-- Supplier --}}
-    <div class="mt-6 rounded-lg border bg-white p-5 shadow-sm">
-
-        <div class="flex items-center justify-between">
-
+    {{-- Supplier details --}}
+    <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-                <h3 class="text-lg font-semibold text-gray-900">
-                    Supplier
-                </h3>
+                <h2 class="text-base font-semibold text-slate-900">Supplier</h2>
+                <p class="mt-1 text-sm text-slate-600">{{ $purchase->supplier->name }}</p>
 
-                <p class="mt-1 text-sm text-gray-600">
-                    {{ $purchase->supplier->name }}
-                </p>
-
-                @if ($purchase->supplier->paypal_email)
-
-                    <p class="mt-1 text-sm text-gray-500">
-                        PayPal:
-                        {{ $purchase->supplier->paypal_email }}
-                    </p>
-
+                @if($purchase->supplier->paypal_email)
+                    <p class="mt-1 text-sm text-slate-500">PayPal: {{ $purchase->supplier->paypal_email }}</p>
                 @else
-
-                    <p class="mt-2 text-sm text-red-600">
-                        PayPal email is not configured.
-                    </p>
-
+                    <p class="mt-2 text-sm text-red-600">PayPal email is not configured.</p>
                 @endif
-
             </div>
 
-
-            <div>
-
-                @if ($this->remainingAmount > 0 && $purchase->supplier->paypal_email)
-
-                    <button
-                        type="button"
-                        wire:click="openPaymentModal"
-                        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm
-                               font-medium text-white hover:bg-indigo-700"
-                    >
-                        Pay Supplier
-                    </button>
-
-                @elseif ($this->remainingAmount <= 0)
-
-                    <span
-                        class="rounded-full bg-green-100 px-3 py-1
-                               text-sm font-medium text-green-700"
-                    >
-                        Fully Paid
-                    </span>
-
+            <div class="shrink-0">
+                @if($this->remainingAmount > 0 && $purchase->supplier->paypal_email)
+                    <x-ui.action-button type="button" variant="primary" wire:click="openPaymentModal">Pay Supplier</x-ui.action-button>
+                @elseif($this->remainingAmount <= 0)
+                    <x-ui.status-badge status="Fully Paid" :variants="['fully paid' => 'bg-emerald-50 text-emerald-700']" />
                 @endif
-
             </div>
-
         </div>
+    </section>
 
-    </div>
-
-
-    {{-- Payments --}}
-    <div class="mt-6 overflow-hidden rounded-lg border bg-white shadow-sm">
-
-        <div class="border-b px-5 py-4">
-            <h3 class="text-lg font-semibold text-gray-900">
-                Payment History
-            </h3>
+    {{-- Payment history --}}
+    <section class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        <div class="border-b border-slate-100 px-5 py-4">
+            <h2 class="text-base font-semibold text-slate-900">Payment History</h2>
         </div>
-
 
         <div class="overflow-x-auto">
-
-            <table class="min-w-full divide-y divide-gray-200">
-
-                <thead class="bg-gray-50">
-
+            <table class="min-w-full divide-y divide-slate-200">
+                <thead class="bg-slate-50">
                     <tr>
-
-                        <th class="px-6 py-3 text-left text-xs font-medium
-                                   uppercase text-gray-500">
-                            Date
-                        </th>
-
-                        <th class="px-6 py-3 text-left text-xs font-medium
-                                   uppercase text-gray-500">
-                            Method
-                        </th>
-
-                        <th class="px-6 py-3 text-left text-xs font-medium
-                                   uppercase text-gray-500">
-                            Amount
-                        </th>
-
-                        <th class="px-6 py-3 text-left text-xs font-medium
-                                   uppercase text-gray-500">
-                            Status
-                        </th>
-
-                        <th class="px-6 py-3 text-left text-xs font-medium
-           uppercase text-gray-500">
-    PayPal Fee
-</th>
-
-                        
-                        <th class="px-6 py-3 text-left text-xs font-medium
-                                   uppercase text-gray-500">
-                            Reference
-                        </th>
-
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Date</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Method</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Amount</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Status</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">PayPal Fee</th>
+                        <th scope="col" class="whitespace-nowrap px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">Reference</th>
                     </tr>
-
                 </thead>
 
+                <tbody class="divide-y divide-slate-100 bg-white">
+                    @forelse($purchase->payments as $payment)
+                        @php
+                            $status = strtoupper(trim((string) ($payment->provider_status ?? 'UNKNOWN')));
+                            $paymentMethod = $payment->payment_method ?? $payment->method ?? 'PayPal';
+                            $successfulStatuses = ['SUCCESS', 'COMPLETED'];
+                            $pendingStatuses = ['PENDING', 'PROCESSING', 'CREATED', 'APPROVED'];
+                        @endphp
 
-                <tbody class="divide-y divide-gray-200 bg-white">
-
-                    @forelse ($purchase->payments as $payment)
-
-                        <tr>
-
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                                {{ $payment->created_at?->format('Y-m-d H:i') }}
+                        <tr wire:key="payment-row-{{ $payment->id }}" class="hover:bg-slate-50/70">
+                            <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+                                {{ $payment->created_at?->format('Y-m-d H:i') ?? '—' }}
                             </td>
-<td class="whitespace-nowrap px-6 py-4 text-sm">
-
-    @php
-        $status = strtoupper(
-            $payment->provider_status ?? 'SUCCESS'
-        );
-    @endphp
-
-    @if ($status === 'SUCCESS')
-
-        <span class="rounded-full bg-green-100 px-2.5 py-1
-                     text-xs font-medium text-green-700">
-            Success
-        </span>
-
-    @elseif (
-        in_array($status, ['PENDING', 'PROCESSING'])
-    )
-
-        <span class="rounded-full bg-yellow-100 px-2.5 py-1
-                     text-xs font-medium text-yellow-700">
-            {{ ucfirst(strtolower($status)) }}
-        </span>
-
-        <button
-            type="button"
-            wire:click="checkPaymentStatus({{ $payment->id }})"
-            wire:loading.attr="disabled"
-            wire:target="checkPaymentStatus({{ $payment->id }})"
-            class="ml-2 text-xs font-medium text-indigo-600
-                   hover:text-indigo-800"
-        >
-            Check Status
-        </button>
-
-    @else
-
-        <span class="rounded-full bg-red-100 px-2.5 py-1
-                     text-xs font-medium text-red-700">
-            {{ ucfirst(strtolower($status)) }}
-        </span>
-
-    @endif
-
-</td>
-
-                            <td class="whitespace-nowrap px-6 py-4 text-sm font-medium">
-                                {{ number_format($payment->amount, 2) }}
-                                {{ $payment->currency }}
+                            <td class="whitespace-nowrap px-5 py-4 text-sm font-medium text-slate-700">
+                                {{ $paymentMethod }}
                             </td>
-
-                            <td class="whitespace-nowrap px-6 py-4 text-sm">
-
-                                @php
-                                    $status = strtoupper(
-                                        $payment->provider_status
-                                        ?? 'SUCCESS'
-                                    );
-                                @endphp
-
-                                @if ($status === 'SUCCESS')
-
-                                    <span class="rounded-full bg-green-100 px-2.5 py-1
-                                                 text-xs font-medium text-green-700">
-                                        Success
-                                    </span>
-
-                                @elseif (
-                                    in_array(
-                                        $status,
-                                        ['PENDING', 'PROCESSING']
-                                    )
-                                )
-
-                                    <span class="rounded-full bg-yellow-100 px-2.5 py-1
-                                                 text-xs font-medium text-yellow-700">
-                                        {{ ucfirst(strtolower($status)) }}
-                                    </span>
-
+                            <td class="whitespace-nowrap px-5 py-4 text-sm font-semibold text-slate-900">
+                                {{ number_format((float) $payment->amount, 2) }} {{ $payment->currency ?: '—' }}
+                            </td>
+                            <td class="whitespace-nowrap px-5 py-4 text-sm">
+                                @if(in_array($status, $successfulStatuses, true))
+                                    <x-ui.status-badge :status="$status" />
+                                @elseif(in_array($status, $pendingStatuses, true))
+                                    <div class="flex items-center gap-2">
+                                        <x-ui.status-badge :status="$status" />
+                                        <x-ui.action-button
+                                            type="button"
+                                            wire:click="checkPaymentStatus({{ $payment->id }})"
+                                            loading-target="checkPaymentStatus({{ $payment->id }})"
+                                            class="px-2.5 py-1.5 text-xs"
+                                        >
+                                            Check Status
+                                        </x-ui.action-button>
+                                    </div>
                                 @else
-
-                                    <span class="rounded-full bg-red-100 px-2.5 py-1
-                                                 text-xs font-medium text-red-700">
-                                        {{ ucfirst(strtolower($status)) }}
-                                    </span>
-
+                                    <x-ui.status-badge
+                                        :status="$status"
+                                        :variants="['failed' => 'bg-red-50 text-red-700', 'denied' => 'bg-red-50 text-red-700', 'cancelled' => 'bg-slate-100 text-slate-600', 'canceled' => 'bg-slate-100 text-slate-600', 'unknown' => 'bg-slate-100 text-slate-600']"
+                                    />
                                 @endif
-
                             </td>
-                            <td class="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-
-    @if ($payment->paypal_fee !== null)
-
-        {{ number_format(
-            (float) $payment->paypal_fee,
-            2
-        ) }}
-
-        {{ $payment->paypal_currency }}
-
-    @else
-
-        -
-
-    @endif
-
-</td>
-
-                            <td class="whitespace-nowrap px-6 py-4 text-xs text-gray-500">
-                                {{ $payment->provider_reference ?? '-' }}
+                            <td class="whitespace-nowrap px-5 py-4 text-sm text-slate-600">
+                                @if($payment->paypal_fee !== null)
+                                    {{ number_format((float) $payment->paypal_fee, 2) }} {{ $payment->paypal_currency ?: '—' }}
+                                @else
+                                    —
+                                @endif
                             </td>
-
+                            <td class="whitespace-nowrap px-5 py-4 text-xs text-slate-500">
+                                {{ $payment->provider_reference ?: '—' }}
+                            </td>
                         </tr>
-
                     @empty
-
                         <tr>
-
-                            <td
-                                colspan="5"
-                                class="px-6 py-8 text-center text-sm text-gray-500"
-                            >
-                                No payments yet.
+                            <td colspan="6" class="px-6 py-8">
+                                <x-ui.empty-state title="No payments yet" description="Payments for this purchase will appear here." />
                             </td>
-
                         </tr>
-
                     @endforelse
-
                 </tbody>
-
             </table>
-
         </div>
+    </section>
 
-    </div>
-
-
-    {{-- Payment Modal --}}
-    @if ($showPaymentModal)
-
-        <div
-            class="fixed inset-0 z-50 flex items-center justify-center
-                   bg-black/50 px-4"
-        >
-
-            <div
-                class="w-full max-w-md rounded-xl bg-white p-6 shadow-xl"
-            >
-
-                <div class="flex items-center justify-between">
-
-                    <h2 class="text-lg font-semibold text-gray-900">
-                        Pay Supplier
-                    </h2>
-
-                    <button
-                        type="button"
-                        wire:click="closePaymentModal"
-                        class="text-gray-400 hover:text-gray-600"
-                    >
-                        ✕
+    {{-- Payment modal --}}
+    @if($showPaymentModal)
+        <div class="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-slate-950/50 px-4 py-8" role="dialog" aria-modal="true" aria-labelledby="supplier-payment-modal-title">
+            <div class="my-auto w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+                <div class="flex items-center justify-between gap-4">
+                    <h2 id="supplier-payment-modal-title" class="text-lg font-semibold text-slate-900">Pay Supplier</h2>
+                    <button type="button" wire:click="closePaymentModal" aria-label="Close payment dialog" class="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                        <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                            <path fill-rule="evenodd" d="M4.22 4.22a.75.75 0 011.06 0L10 8.94l4.72-4.72a.75.75 0 111.06 1.06L11.06 10l4.72 4.72a.75.75 0 11-1.06 1.06L10 11.06l-4.72 4.72a.75.75 0 01-1.06-1.06L8.94 10 4.22 5.28a.75.75 0 010-1.06Z" clip-rule="evenodd" />
+                        </svg>
                     </button>
-
                 </div>
-
 
                 <div class="mt-5 space-y-4">
+                    <div>
+                        <p class="text-sm text-slate-500">Supplier</p>
+                        <p class="font-medium text-slate-900">{{ $purchase->supplier->name }}</p>
+                    </div>
 
                     <div>
-                        <p class="text-sm text-gray-500">
-                            Supplier
-                        </p>
-
-                        <p class="font-medium text-gray-900">
-                            {{ $purchase->supplier->name }}
-                        </p>
+                        <p class="text-sm text-slate-500">PayPal Email</p>
+                        <p class="break-all font-medium text-slate-900">{{ $purchase->supplier->paypal_email }}</p>
                     </div>
 
-
-                    <div>
-                        <p class="text-sm text-gray-500">
-                            PayPal Email
-                        </p>
-
-                        <p class="font-medium text-gray-900">
-                            {{ $purchase->supplier->paypal_email }}
-                        </p>
+                    <div class="rounded-xl bg-slate-50 p-4">
+                        <p class="text-sm text-slate-500">Remaining Debt</p>
+                        <p class="mt-1 text-xl font-semibold text-red-600">{{ number_format((float) $this->remainingAmount, 2) }} EGP</p>
                     </div>
 
+                    <x-form.input
+                        label="Amount to Pay"
+                        name="amount"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        :max="$this->remainingAmount"
+                        wire:model.live.debounce.300ms="amount"
+                        placeholder="Enter amount"
+                        suffix="EGP"
+                        required
+                    />
 
-                    <div class="rounded-lg bg-gray-50 p-4">
-
-                        <p class="text-sm text-gray-500">
-                            Remaining Debt
-                        </p>
-
-                        <p class="mt-1 text-xl font-semibold text-red-600">
-                            {{ number_format($this->remainingAmount, 2) }}
-                            EGP
-                        </p>
-
-                    </div>
-<div>
-
-    <label
-        for="amount"
-        class="block text-sm font-medium text-gray-700"
-    >
-        Amount to Pay
-    </label>
-
-    <div class="relative mt-1">
-
-        <input
-            id="amount"
-            type="number"
-            step="0.01"
-            min="0.01"
-            max="{{ $this->remainingAmount }}"
-            wire:model.live="amount"
-            class="block w-full rounded-lg border-gray-300 pr-16
-                   shadow-sm focus:border-indigo-500
-                   focus:ring-indigo-500"
-            placeholder="Enter amount"
-        >
-
-        <span
-            class="absolute inset-y-0 right-3 flex
-                   items-center text-sm text-gray-500"
-        >
-            EGP
-        </span>
-
-    </div>
-
-    @error('amount')
-        <p class="mt-1 text-sm text-red-600">
-            {{ $message }}
-        </p>
-    @enderror
-
-</div>
-
-
-@if((float) $amount > 0)
-
-    <div class="rounded-lg border border-indigo-100
-                bg-indigo-50 p-4">
-
-        <div class="flex justify-between text-sm">
-
-            <span class="text-gray-600">
-                Amount
-            </span>
-
-            <span class="font-semibold text-gray-900">
-                {{ number_format((float) $amount, 2) }}
-                EGP
-            </span>
-
-        </div>
-
-        <div class="mt-2 flex justify-between text-sm">
-
-            <span class="text-gray-600">
-                PayPal Amount
-            </span>
-
-            <span class="font-semibold text-indigo-600">
-                {{ number_format($this->paypalAmount, 2) }}
-                USD
-            </span>
-
-        </div>
-
-        <div class="mt-2 text-xs text-gray-500">
-            Sandbox rate:
-            1 USD =
-            {{ number_format(
-                (float) config('services.paypal.egp_usd_rate'),
-                2
-            ) }}
-            EGP
-        </div>
-
-    </div>
-
-@endif
-
-
-                    <div class="rounded-lg border p-3">
-
-                        <div class="flex items-center gap-3">
-
-                            <input
-                                type="radio"
-                                checked
-                                disabled
-                                class="h-4 w-4"
-                            >
-
-                            <div>
-                                <p class="text-sm font-medium text-gray-900">
-                                    PayPal
-                                </p>
-
-                                <p class="text-xs text-gray-500">
-                                    Send payment to supplier's PayPal account
-                                </p>
+                    @if(is_numeric($amount) && (float) $amount > 0)
+                        <div class="rounded-xl border border-indigo-100 bg-indigo-50 p-4">
+                            <div class="flex justify-between gap-4 text-sm">
+                                <span class="text-slate-600">Amount</span>
+                                <span class="font-semibold text-slate-900">{{ number_format((float) $amount, 2) }} EGP</span>
                             </div>
-
+                            <div class="mt-2 flex justify-between gap-4 text-sm">
+                                <span class="text-slate-600">PayPal Amount</span>
+                                <span class="font-semibold text-indigo-600">{{ number_format((float) $this->paypalAmount, 2) }} USD</span>
+                            </div>
+                            <p class="mt-2 text-xs text-slate-500">
+                                Configured rate: 1 USD = {{ number_format((float) config('services.paypal.egp_usd_rate'), 2) }} EGP
+                            </p>
                         </div>
+                    @endif
 
+                    <div class="rounded-xl border border-slate-200 p-3">
+                        <div class="flex items-center gap-3">
+                            <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600" aria-hidden="true">
+                                <svg class="h-5 w-5" viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="12" cy="12" r="9" />
+                                    <path d="M9 7.5h4.2a2.3 2.3 0 010 4.6H10v4.4H8.2V7.5H9Zm1.8 1.6v1.4h2.2a.7.7 0 000-1.4h-2.2Z" fill="white" />
+                                </svg>
+                            </span>
+                            <div>
+                                <p class="text-sm font-medium text-slate-900">PayPal</p>
+                                <p class="text-xs text-slate-500">Send payment to the supplier's PayPal account.</p>
+                            </div>
+                        </div>
                     </div>
-
                 </div>
 
-
-                <div class="mt-6 flex justify-end gap-3">
-
-                    <button
+                <div class="mt-6 flex flex-col-reverse justify-end gap-3 sm:flex-row">
+                    <x-ui.action-button
                         type="button"
+                        variant="secondary"
                         wire:click="closePaymentModal"
-                        wire:loading.attr="disabled"
-                        class="rounded-lg border border-gray-300 bg-white
-                               px-4 py-2 text-sm font-medium text-gray-700
-                               hover:bg-gray-50"
+                        loading-target="payWithPaypal"
+                        class="w-full sm:w-auto"
                     >
                         Cancel
-                    </button>
+                    </x-ui.action-button>
 
- <button
-    type="button"
-    wire:click="payWithPaypal"
-    wire:loading.attr="disabled"
-    wire:target="payWithPaypal"
-    class="rounded-lg bg-indigo-600 px-4 py-2
-           text-sm font-medium text-white
-           hover:bg-indigo-700
-           disabled:opacity-50"
->
-    <span
-        wire:loading.remove
-        wire:target="payWithPaypal"
-    >
-        Send Payment via PayPal
-    </span>
-
-    <span
-        wire:loading
-        wire:target="payWithPaypal"
-    >
-        Sending Payment...
-    </span>
-</button>
-
-
+                    <x-ui.action-button
+                        type="button"
+                        variant="primary"
+                        wire:click="payWithPaypal"
+                        loading-target="payWithPaypal"
+                        class="w-full sm:w-auto"
+                    >
+                        <span wire:loading.remove wire:target="payWithPaypal">Send Payment via PayPal</span>
+                        <span wire:loading wire:target="payWithPaypal">Sending Payment...</span>
+                    </x-ui.action-button>
                 </div>
-
             </div>
-
         </div>
-
     @endif
-
 </div>

@@ -1,6 +1,7 @@
 
 <?php
 
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Models\Installment;
 use App\Services\InstallmentService;
 use Livewire\Attributes\Computed;
@@ -10,6 +11,7 @@ use Livewire\WithPagination;
 
 new #[Title('Installments')] class extends Component
 {
+    use WithBulkSelection;
     use WithPagination;
 
     private const SORTABLE_FIELDS = [
@@ -27,6 +29,11 @@ new #[Title('Installments')] class extends Component
     public string $sortField = 'created_at';
 
     public string $sortDirection = 'desc';
+
+    public function getBulkVisibleIds(): array
+    {
+        return $this->installments->getCollection()->pluck('id')->all();
+    }
 
     #[Computed]
     public function installments()
@@ -55,7 +62,7 @@ new #[Title('Installments')] class extends Component
                 'installmentPlan',
             ])
             ->when(trim($this->search) !== '', function ($query) {
-                $search = '%' . trim($this->search) . '%';
+                $search = '%'.trim($this->search).'%';
 
                 $query->whereHas(
                     'installmentPlan',
@@ -73,11 +80,13 @@ new #[Title('Installments')] class extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedPerPage(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function sortBy(string $field): void
@@ -91,12 +100,13 @@ new #[Title('Installments')] class extends Component
                 $this->sortDirection === 'asc'
                     ? 'desc'
                     : 'asc';
-
-            return;
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
         }
 
-        $this->sortField = $field;
-        $this->sortDirection = 'asc';
+        $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function deleteInstallment(
@@ -107,6 +117,12 @@ new #[Title('Installments')] class extends Component
             $installment = Installment::findOrFail($id);
 
             $service->delete($installment);
+            $this->selected = array_values(array_diff(
+                $this->selected,
+                [$id]
+            ));
+            $this->syncBulkSelection();
+            $this->resetPage();
 
             unset($this->installments);
 
@@ -114,7 +130,7 @@ new #[Title('Installments')] class extends Component
                 'message',
                 'Installment deleted successfully.'
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             report($exception);
 
             session()->flash(

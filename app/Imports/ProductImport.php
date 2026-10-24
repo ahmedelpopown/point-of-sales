@@ -3,47 +3,43 @@
 namespace App\Imports;
 
 use App\Models\Product;
-use Illuminate\Support\Collection;
-use Livewire\WithFileUploads;
-use Livewire\WithPagination;
-use Maatwebsite\Excel\Concerns\ToCollection;
 use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\WithValidation;
 
 class ProductImport implements ToModel, WithHeadingRow, WithValidation
 {
-
-    /**
-     * @param array $row
-     *
-     * @return \Illuminate\Database\Eloquent\Model|null
-     */
-    public function model(array $row)
+    public function model(array $row): Product
     {
         return new Product([
-            'name' => $row['name'],
-            'description' => $row['description'],
-            'barcode' => $row['barcode'],
-            'current_quantity' => $row['current_quantity'],
+            'name' => trim((string) $row['name']),
+            'description' => isset($row['description']) && trim((string) $row['description']) !== ''
+                ? trim((string) $row['description'])
+                : null,
+            'barcode' => (string) $row['barcode'],
             'price' => $row['price'],
-            'status' => $row['status'] ?? 'active',
-            'image' => $row['image'] ?? 'no image',
+            'status' => isset($row['status']) && $row['status'] !== ''
+                ? $row['status']
+                : 'active',
         ]);
     }
-
 
     public function rules(): array
     {
         return [
-            'name' => 'required',
-            'description' => 'required',
-            'barcode' => 'required',
-            'current_quantity' => 'required',
-            'price' => 'required',
-            'status' => 'required',
-            'image' => 'required',
+            '*.name' => ['required', 'string', 'max:255'],
+            '*.barcode' => [
+                'required',
+                'string',
+                'regex:/^[0-9]+$/',
+                'min:8',
+                'max:50',
+                'distinct',
+                'unique:products,barcode',
+            ],
+            '*.description' => ['nullable', 'string', 'max:1000'],
+            '*.price' => ['required', 'numeric', 'min:0', 'decimal:0,2', 'max:999999999.99'],
+            '*.status' => ['nullable', 'in:active,inactive'],
         ];
-
     }
 }

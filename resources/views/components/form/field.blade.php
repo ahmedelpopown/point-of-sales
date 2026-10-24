@@ -3,25 +3,22 @@
     'name' => null,
     'hint' => null,
     'required' => false,
+    'fieldId' => null,
 ])
 
 @php
-    $errorId = $name
-        ? preg_replace('/[^A-Za-z0-9_-]+/', '-', $name) . '-error'
+    $fieldId ??= filled($name)
+        ? preg_replace('/[^A-Za-z0-9_-]+/', '-', $name)
         : null;
 
+    $errorId = $fieldId ? $fieldId . '-error' : null;
     $hasError = filled($name) && $errors->has($name);
 @endphp
 
 <div class="w-full">
-
     @if($label)
-
         <div class="form-field-label">
-
-            <label
-                for="{{ $attributes->get('fieldId') }}"
-            >
+            <label @if($fieldId) for="{{ $fieldId }}" @endif>
                 {{ $label }}
 
                 @if($required)
@@ -30,45 +27,21 @@
             </label>
 
             @if($hint)
-                <span class="form-field-hint">
-                    {{ $hint }}
-                </span>
+                <span class="form-field-hint">{{ $hint }}</span>
             @endif
-
         </div>
-
+    @elseif($hint)
+        <p class="form-field-hint mb-2">{{ $hint }}</p>
     @endif
-
 
     {{ $slot }}
 
-
     @if($hasError)
-
-        <div
-            id="{{ $errorId }}"
-            class="form-error"
-        >
-
-            <svg
-                class="form-error-icon"
-                viewBox="0 0 20 20"
-                fill="currentColor"
-                aria-hidden="true"
-            >
-                <path
-                    fill-rule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16Zm-1-5.5a1 1 0 112 0 1 1 0 012 0v3a1 1 0 01-2 0v-3Zm1 7.5a.875.875 0 100-1.75A.875.875 0 0010 20Z"
-                    clip-rule="evenodd"
-                />
+        <div id="{{ $errorId }}" class="form-error" role="alert">
+            <svg class="form-error-icon" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16Zm-.75-11a.75.75 0 011.5 0v4a.75.75 0 01-1.5 0V7Zm.75 6a1 1 0 100 2 1 1 0 000-2Z" clip-rule="evenodd" />
             </svg>
-
-            <span>
-                {{ $errors->first($name) }}
-            </span>
-
+            <span>{{ $errors->first($name) }}</span>
         </div>
-
     @endif
-
 </div>

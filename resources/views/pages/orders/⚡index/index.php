@@ -1,35 +1,28 @@
 <?php
 
+use App\Exports\OrdersExport;
+use App\Exports\OrdersImportTemplate;
+use App\Imports\OrderImport;
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Models\Employee;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Shop;
 use App\Models\User;
 use App\Services\OrderService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-use Livewire\WithPagination;
-
-use Barryvdh\DomPDF\Facade\Pdf;
-
-
-use App\Exports\OrdersExport;
-use App\Exports\OrdersImportTemplate;
-use App\Imports\OrderImport;
 use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
+
 new #[Title('Orders')] class extends Component
 {
-    use WithPagination,WithFileUploads;
-    
+    use WithBulkSelection, WithFileUploads, WithPagination;
 
-
-    public array $selectedOrders = [];
-
-public bool $selectPage = false;
-
-public $importFile;
+    public $importFile;
 
     public string $search = '';
 
@@ -39,7 +32,6 @@ public $importFile;
 
     public string $shopId = '';
 
-    
     public string $productId = '';
 
     public array $paymentMethods = [];
@@ -58,97 +50,87 @@ public $importFile;
 
     public int $perPage = 10;
 
-    public function updatedSelectPage(bool $value): void
-{
-    $pageIds = $this->orders
-        ->pluck('id')
-        ->map(fn ($id) => (string) $id)
-        ->toArray();
-
-    if ($value) {
-        $this->selectedOrders = array_values(
-            array_unique([
-                ...$this->selectedOrders,
-                ...$pageIds,
-            ])
-        );
-
-        return;
+    public function getBulkVisibleIds(): array
+    {
+        return $this->orders->getCollection()->pluck('id')->all();
     }
 
-    $this->selectedOrders = array_values(
-        array_diff(
-            $this->selectedOrders,
-            $pageIds
-        )
-    );
-}
-public function clearSelection(): void
-{
-    $this->selectedOrders = [];
-
-    $this->selectPage = false;
-}
-protected function sortedOrdersQuery()
-{
-    return $this->ordersQuery()
-        ->orderBy(
-            $this->sortField,
-            $this->sortDirection
-        );
-}
-public function exportSelected()
-{
-    if (empty($this->selectedOrders)) {
-        return;
+    public function clearSelection(): void
+    {
+        $this->clearBulkSelection();
     }
 
-    return Excel::download(
-        new OrdersExport(
-            $this->sortedOrdersQuery()
-                ->whereIn('id', $this->selectedOrders)
-        ),
-        'selected-orders-' . now()->format('Y-m-d-H-i-s') . '.xlsx'
-    );
-}
-public function deleteSelected(OrderService $service): void
-{
-    if (empty($this->selectedOrders)) {
-        return;
+    protected function sortedOrdersQuery()
+    {
+        return $this->ordersQuery()
+            ->orderBy(
+                $this->sortField,
+                $this->sortDirection
+            );
     }
 
-    try {
+    public function exportSelected()
+    {
+        $ids = $this->normalizeBulkIds($this->selected);
 
-        foreach ($this->selectedOrders as $id) {
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one order to export.');
 
-            $order = Order::find($id);
-
-            if ($order) {
-                $service->delete($order);
-            }
+            return null;
         }
 
-        $count = count($this->selectedOrders);
-
-        $this->clearSelection();
-
-        session()->flash(
-            'message',
-            "{$count} orders deleted successfully."
-        );
-
-        $this->resetPage();
-
-    } catch (\Throwable $e) {
-
-        report($e);
-
-        session()->flash(
-            'error',
-            $e->getMessage()
+        return Excel::download(
+            new OrdersExport(
+                $this->sortedOrdersQuery()
+                    ->whereIn('id', $ids)
+            ),
+            'selected-orders-'.now()->format('Y-m-d-H-i-s').'.xlsx'
         );
     }
-}
+
+    public function deleteSelected(OrderService $service): void
+    {
+        $ids = $this->normalizeBulkIds($this->selected);
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one order first.');
+
+            return;
+        }
+
+        try {
+
+            foreach ($ids as $id) {
+
+                $order = Order::find($id);
+
+                if ($order) {
+                    $service->delete($order);
+                }
+            }
+
+            $count = count($ids);
+
+            $this->clearSelection();
+
+            session()->flash(
+                'message',
+                "{$count} orders deleted successfully."
+            );
+
+            $this->resetPage();
+
+        } catch (Throwable $e) {
+
+            report($e);
+
+            session()->flash(
+                'error',
+                $e->getMessage()
+            );
+        }
+    }
+
     #[Computed]
     public function users()
     {
@@ -167,7 +149,6 @@ public function deleteSelected(OrderService $service): void
             ->orderBy('last_name')
             ->get();
     }
-    
 
     #[Computed]
     public function shops()
@@ -178,63 +159,66 @@ public function deleteSelected(OrderService $service): void
             ->get();
     }
 
-#[Computed]
-public function orders()
-{
-      return $this->sortedOrdersQuery()
-        ->paginate($this->perPage);
-}
-public function exportExcel()
-{
-    return Excel::download(
-        new OrdersExport($this->sortedOrdersQuery()),
-        'orders-' . now()->format('Y-m-d') . '.xlsx'
-    );
-}
-public function downloadImportTemplate()
-{
-    return Excel::download(
-        new OrdersImportTemplate,
-        'orders-import-template.xlsx'
-    );
-}
-public function exportPdf()
-{
-    $orders = $this->sortedOrdersQuery()->get();
-
-    return response()->streamDownload(
-        function () use ($orders) {
-
-            echo Pdf::loadView(
-                'pages.orders.pdf',
-                compact('orders')
-            )->output();
-
-        },
-        'orders-' . now()->format('Y-m-d') . '.pdf'
-    );
-}
-
-  public function updated($property): void
-{
-    if (in_array($property, [
-        'search',
-        'customerId',
-        'employeeId',
-        'shopId',
-        'productId',
-        'paymentMethods',
-        'dateFrom',
-        'dateTo',
-        'minTotal',
-        'maxTotal',
-        'perPage',
-    ], true)) {
-        $this->resetPage();
-
-        $this->clearSelection();
+    #[Computed]
+    public function orders()
+    {
+        return $this->sortedOrdersQuery()
+            ->paginate($this->perPage);
     }
-}
+
+    public function exportExcel()
+    {
+        return Excel::download(
+            new OrdersExport($this->sortedOrdersQuery()),
+            'orders-'.now()->format('Y-m-d').'.xlsx'
+        );
+    }
+
+    public function downloadImportTemplate()
+    {
+        return Excel::download(
+            new OrdersImportTemplate,
+            'orders-import-template.xlsx'
+        );
+    }
+
+    public function exportPdf()
+    {
+        $orders = $this->sortedOrdersQuery()->get();
+
+        return response()->streamDownload(
+            function () use ($orders) {
+
+                echo Pdf::loadView(
+                    'pages.orders.pdf',
+                    compact('orders')
+                )->output();
+
+            },
+            'orders-'.now()->format('Y-m-d').'.pdf'
+        );
+    }
+
+    public function updated($property): void
+    {
+        if (in_array($property, [
+            'search',
+            'customerId',
+            'employeeId',
+            'shopId',
+            'productId',
+            'paymentMethods',
+            'dateFrom',
+            'dateTo',
+            'minTotal',
+            'maxTotal',
+            'perPage',
+        ], true)) {
+            $this->resetPage();
+
+            $this->clearSelection();
+        }
+    }
 
     public function sortBy(string $field): void
     {
@@ -254,6 +238,9 @@ public function exportPdf()
                     ? 'desc'
                     : 'asc';
 
+            $this->resetPage();
+            $this->clearSelection();
+
             return;
         }
 
@@ -261,6 +248,7 @@ public function exportPdf()
         $this->sortDirection = 'asc';
 
         $this->resetPage();
+        $this->clearSelection();
     }
 
     public function resetFilters(): void
@@ -287,177 +275,171 @@ public function exportPdf()
     }
 
     protected function importValidationRules(): array
-{
-    return [
-        'importFile' => [
-            'required',
-            'file',
-            'mimes:xlsx,xls,csv',
-            'max:10240',
-        ],
-    ];
-}
- 
- 
-public function importExcel(): void
-{
-    
-    $this->validate($this->importValidationRules());
-
-    try {
-
-        Excel::import(
-            new OrderImport,
-            $this->importFile
-        );
-
-        $this->reset('importFile');
-
-        session()->flash(
-            'message',
-            'Orders imported successfully.'
-        );
-
-        $this->resetPage();
-
-    } catch (\Throwable $e) {
-
-        report($e);
-
-        session()->flash(
-            'error',
-            $e->getMessage()
-        );
+    {
+        return [
+            'importFile' => [
+                'required',
+                'file',
+                'mimes:xlsx,xls,csv',
+                'max:10240',
+            ],
+        ];
     }
-}
-protected function ordersQuery()
-{
-    return Order::query()
-        ->with([
-            'user',
-            'employee',
-        ])
-        ->withCount('orderItems')
 
-        ->when($this->search, function ($query) {
+    public function importExcel(): void
+    {
 
-            $search = "%{$this->search}%";
+        $this->validate($this->importValidationRules());
 
-            $query->where(function ($query) use ($search) {
+        try {
 
-                $query
-                    ->where('id', 'like', $search)
-
-                    ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', $search)
-                            ->orWhere('email', 'like', $search);
-                    })
-
-                    ->orWhereHas('employee', function ($q) use ($search) {
-                        $q->where('first_name', 'like', $search)
-                            ->orWhere('last_name', 'like', $search);
-                    })
-
-                    ->orWhereHas('orderItems.product', function ($q) use ($search) {
-                        $q->where('name', 'like', $search);
-                    });
-
-            });
-
-        })
-
-        ->when(
-            $this->customerId,
-            fn ($query) =>
-                $query->where('user_id', $this->customerId)
-        )
-
-        ->when(
-            $this->employeeId,
-            fn ($query) =>
-                $query->where('employee_id', $this->employeeId)
-        )
-
-        ->when($this->shopId, function ($query) {
-            $query->whereHas(
-                'orderItems',
-                fn ($q) =>
-                    $q->where('shop_id', $this->shopId)
+            Excel::import(
+                new OrderImport,
+                $this->importFile
             );
-        })
 
-        ->when($this->productId, function ($query) {
-            $query->whereHas(
-                'orderItems',
-                fn ($q) =>
-                    $q->where('product_id', $this->productId)
+            $this->reset('importFile');
+
+            session()->flash(
+                'message',
+                'Orders imported successfully.'
             );
-        })
 
-        ->when($this->paymentMethods, function ($query) {
+            $this->resetPage();
 
-            $query->where(function ($query) {
+        } catch (Throwable $e) {
 
-                if (in_array('installment', $this->paymentMethods, true)) {
-                    $query->whereHas('installments');
-                }
+            report($e);
 
-                if (in_array('cash', $this->paymentMethods, true)) {
-                    $query->orWhereDoesntHave('installments');
-                }
+            session()->flash(
+                'error',
+                $e->getMessage()
+            );
+        }
+    }
 
-            });
+    protected function ordersQuery()
+    {
+        return Order::query()
+            ->with([
+                'user',
+                'employee',
+            ])
+            ->withCount('orderItems')
 
-        })
+            ->when($this->search, function ($query) {
 
-        ->when(
-            $this->dateFrom,
-            fn ($query) =>
-                $query->whereDate(
+                $search = "%{$this->search}%";
+
+                $query->where(function ($query) use ($search) {
+
+                    $query
+                        ->where('id', 'like', $search)
+
+                        ->orWhereHas('user', function ($q) use ($search) {
+                            $q->where('name', 'like', $search)
+                                ->orWhere('email', 'like', $search);
+                        })
+
+                        ->orWhereHas('employee', function ($q) use ($search) {
+                            $q->where('first_name', 'like', $search)
+                                ->orWhere('last_name', 'like', $search);
+                        })
+
+                        ->orWhereHas('orderItems.product', function ($q) use ($search) {
+                            $q->where('name', 'like', $search);
+                        });
+
+                });
+
+            })
+
+            ->when(
+                $this->customerId,
+                fn ($query) => $query->where('user_id', $this->customerId)
+            )
+
+            ->when(
+                $this->employeeId,
+                fn ($query) => $query->where('employee_id', $this->employeeId)
+            )
+
+            ->when($this->shopId, function ($query) {
+                $query->whereHas(
+                    'orderItems',
+                    fn ($q) => $q->where('shop_id', $this->shopId)
+                );
+            })
+
+            ->when($this->productId, function ($query) {
+                $query->whereHas(
+                    'orderItems',
+                    fn ($q) => $q->where('product_id', $this->productId)
+                );
+            })
+
+            ->when($this->paymentMethods, function ($query) {
+
+                $query->where(function ($query) {
+
+                    if (in_array('installment', $this->paymentMethods, true)) {
+                        $query->whereHas('installments');
+                    }
+
+                    if (in_array('cash', $this->paymentMethods, true)) {
+                        $query->orWhereDoesntHave('installments');
+                    }
+
+                });
+
+            })
+
+            ->when(
+                $this->dateFrom,
+                fn ($query) => $query->whereDate(
                     'created_at',
                     '>=',
                     $this->dateFrom
                 )
-        )
+            )
 
-        ->when(
-            $this->dateTo,
-            fn ($query) =>
-                $query->whereDate(
+            ->when(
+                $this->dateTo,
+                fn ($query) => $query->whereDate(
                     'created_at',
                     '<=',
                     $this->dateTo
                 )
-        )
+            )
 
-        ->when(
-            $this->minTotal !== '',
-            fn ($query) =>
-                $query->where(
+            ->when(
+                $this->minTotal !== '',
+                fn ($query) => $query->where(
                     'total',
                     '>=',
                     $this->minTotal
                 )
-        )
+            )
 
-        ->when(
-            $this->maxTotal !== '',
-            fn ($query) =>
-                $query->where(
+            ->when(
+                $this->maxTotal !== '',
+                fn ($query) => $query->where(
                     'total',
                     '<=',
                     $this->maxTotal
                 )
-        );
-}
+            );
+    }
+
     #[Computed]
-public function products()
-{
-    return Product::query()
-        ->where('status', 'active')
-        ->orderBy('name')
-        ->get();
-}
+    public function products()
+    {
+        return Product::query()
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+    }
+
     public function deleteOrder(
         int $id,
         OrderService $service
@@ -467,13 +449,19 @@ public function products()
             $order = Order::findOrFail($id);
 
             $service->delete($order);
+            $this->selected = array_values(array_diff(
+                $this->selected,
+                [$id]
+            ));
+            $this->syncBulkSelection();
+            $this->resetPage();
 
             session()->flash(
                 'message',
                 'Order deleted successfully.'
             );
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
 
             report($e);
 
@@ -484,4 +472,3 @@ public function products()
         }
     }
 };
-?>

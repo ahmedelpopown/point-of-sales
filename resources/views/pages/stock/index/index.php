@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Models\Shop;
 use App\Models\Stock;
 use App\Models\Warehouse;
@@ -11,6 +12,7 @@ use Livewire\WithPagination;
 
 new #[Title('Stock Overview')] class extends Component
 {
+    use WithBulkSelection;
     use WithPagination;
 
     public string $search = '';
@@ -28,6 +30,11 @@ new #[Title('Stock Overview')] class extends Component
     public string $sortDirection = 'asc';
 
     public int $perPage = 10;
+
+    public function getBulkVisibleIds(): array
+    {
+        return $this->stocks->getCollection()->pluck('id')->all();
+    }
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -202,6 +209,7 @@ new #[Title('Stock Overview')] class extends Component
                     : 'asc';
 
             $this->resetPage();
+            $this->clearBulkSelection();
 
             return;
         }
@@ -210,11 +218,13 @@ new #[Title('Stock Overview')] class extends Component
         $this->sortDirection = 'asc';
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedLocationType(): void
@@ -223,6 +233,7 @@ new #[Title('Stock Overview')] class extends Component
         $this->shopId = '';
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedWarehouseId(): void
@@ -231,6 +242,7 @@ new #[Title('Stock Overview')] class extends Component
         $this->shopId = '';
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedShopId(): void
@@ -239,11 +251,19 @@ new #[Title('Stock Overview')] class extends Component
         $this->warehouseId = '';
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedLowStockOnly(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function resetFilters(): void
@@ -257,6 +277,7 @@ new #[Title('Stock Overview')] class extends Component
         ]);
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function stockStatus(Stock $stock): string

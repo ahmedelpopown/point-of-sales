@@ -2,49 +2,43 @@
 
 use App\Exports\UserExport;
 use App\Imports\UserImport;
+use App\Livewire\Concerns\WithBulkSelection;
+use App\Livewire\Concerns\WithDeleteConfirmation;
+use App\Livewire\Concerns\WithImportExport;
 use App\Models\City;
 use App\Models\Governorate;
 use App\Models\User;
-use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
-use Maatwebsite\Excel\Excel;
-use Maatwebsite\Excel\Validators\ValidationException;
 
-new #[Title('User')] class extends Component {
-    use WithPagination, WithFileUploads;
+new #[Title('Users')] class extends Component
+{
+    use WithBulkSelection;
+    use WithDeleteConfirmation;
+    use WithFileUploads;
+    use WithImportExport;
+    use WithPagination;
 
-    public $importFile;
-
-    public $search = '';
+    public string $search = '';
 
     public $governorate_id = null;
 
     public $city_id = null;
 
-    public $gender = '';
+    public string $gender = '';
 
-    public $email = '';
+    public string $email = '';
 
     public $age = '';
 
-    public $sortField = 'name';
+    public string $sortField = 'name';
 
-    public $sortDirection = 'asc';
+    public string $sortDirection = 'asc';
 
-    public $perPage = 10;
-
-    public $selected = [];
-
-    public $selectAll = false;
-
-    public $showDeleteModal = false;
-
-    public $UserToDelete = null;
+    public int $perPage = 10;
 
     protected $queryString = [
         'search' => ['except' => ''],
@@ -57,539 +51,200 @@ new #[Title('User')] class extends Component {
         'sortDirection' => ['except' => 'asc'],
     ];
 
+    protected function sortableFields(): array
+    {
+        return [
+            'id', 'name', 'email', 'age', 'gender',
+            'created_at', 'governorate_id', 'city_id',
+        ];
+    }
 
-    /*
-    |--------------------------------------------------------------------------
-    | Users
-    |--------------------------------------------------------------------------
-    */
+    protected function filteredQuery()
+    {
+        $sortField = in_array($this->sortField, $this->sortableFields(), true)
+            ? $this->sortField
+            : 'name';
+
+        $sortDirection = in_array($this->sortDirection, ['asc', 'desc'], true)
+            ? $this->sortDirection
+            : 'asc';
+
+        $query = User::query()
+            ->when(trim($this->search) !== '', fn ($query) => $query->search(trim($this->search)))
+            ->when($this->governorate_id, fn ($query) => $query->where('governorate_id', $this->governorate_id))
+            ->when($this->city_id, fn ($query) => $query->where('city_id', $this->city_id))
+            ->when(trim($this->email) !== '', fn ($query) => $query->where('email', 'like', '%'.trim($this->email).'%'))
+            ->when($this->gender !== '', fn ($query) => $query->where('gender', $this->gender))
+            ->when($this->age !== '' && $this->age !== null, fn ($query) => $query->where('age', $this->age))
+            ->with(['governorate:id,name', 'city:id,name']);
+
+        if ($sortField === 'governorate_id') {
+            return $query
+                ->orderBy(
+                    Governorate::query()
+                        ->select('name')
+                        ->whereColumn('governorates.id', 'users.governorate_id'),
+                    $sortDirection
+                )
+                ->orderBy('users.id');
+        }
+
+        if ($sortField === 'city_id') {
+            return $query
+                ->orderBy(
+                    City::query()
+                        ->select('name')
+                        ->whereColumn('cities.id', 'users.city_id'),
+                    $sortDirection
+                )
+                ->orderBy('users.id');
+        }
+
+        return $query->orderBy('users.'.$sortField, $sortDirection);
+    }
 
     #[Computed]
     public function users()
     {
-        return User::query()
-            ->when(
-                $this->search,
-                fn ($q) => $q->search($this->search)
-            )
-
-            ->when(
-                $this->governorate_id,
-                fn ($q) => $q->where(
-                    'governorate_id',
-                    $this->governorate_id
-                )
-            )
-
-            ->when(
-                $this->city_id,
-                fn ($q) => $q->where(
-                    'city_id',
-                    $this->city_id
-                )
-            )
-
-            ->when(
-                $this->age !== '',
-                fn ($q) => $q->where(
-                    'age',
-                    $this->age
-                )
-            )
-
-            ->when(
-                $this->email,
-                fn ($q) => $q->where(
-                    'email',
-                    $this->email
-                )
-            )
-
-            ->when(
-                $this->gender,
-                fn ($q) => $q->where(
-                    'gender',
-                    $this->gender
-                )
-            )
-
-            ->with([
-                'governorate:id,name',
-                'city:id,name',
-            ])
-
-            ->orderBy(
-                $this->sortField,
-                $this->sortDirection
-            )
-
-            ->paginate($this->perPage);
+        return $this->filteredQuery()->paginate($this->perPage);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Governorates
-    |--------------------------------------------------------------------------
-    */
 
     #[Computed]
     public function governorates()
     {
-        return Governorate::query()
-            ->orderBy('name')
-            ->get(['id', 'name']);
+        return Governorate::query()->orderBy('name')->get(['id', 'name']);
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Cities
-    |--------------------------------------------------------------------------
-    */
 
     #[Computed]
     public function cities()
     {
-        if (!$this->governorate_id) {
+        if (! $this->governorate_id) {
             return collect();
         }
 
         return City::query()
-            ->where(
-                'governorate_id',
-                $this->governorate_id
-            )
+            ->where('governorate_id', $this->governorate_id)
             ->orderBy('name')
             ->get(['id', 'name']);
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Emails
-    |--------------------------------------------------------------------------
-    */
-
-    #[Computed]
-    public function emails()
+    public function getBulkVisibleIds(): array
     {
-        return User::query()
-            ->whereNotNull('email')
-            ->distinct()
-            ->pluck('email')
-            ->sort()
-            ->values();
+        return $this->users->getCollection()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Ages
-    |--------------------------------------------------------------------------
-    */
-
-    #[Computed]
-    public function ages()
+    public function updated($property): void
     {
-        return User::query()
-            ->whereNotNull('age')
-            ->distinct()
-            ->pluck('age')
-            ->sort()
-            ->values();
+        if (in_array($property, [
+            'search', 'governorate_id', 'city_id', 'email', 'gender', 'age',
+            'perPage', 'sortField', 'sortDirection',
+        ], true)) {
+            $this->resetPage();
+            $this->clearSelected();
+        }
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reactive Filters
-    |--------------------------------------------------------------------------
-    */
-
-    public function updatedSearch(): void
+    public function updatedGovernorateId(): void
     {
-        $this->resetPage();
-    }
-
-
-    public function updatedGovernorateId($value): void
-    {
-        // المحافظة اتغيرت
-        // إذن المدينة القديمة أصبحت غير صالحة
         $this->city_id = null;
-
         $this->resetPage();
+        $this->clearSelected();
     }
-
-
-    public function updatedCityId(): void
-    {
-        $this->resetPage();
-    }
-
-
-    public function updatedEmail(): void
-    {
-        $this->resetPage();
-    }
-
-
-    public function updatedGender(): void
-    {
-        $this->resetPage();
-    }
-
-
-    public function updatedAge(): void
-    {
-        $this->resetPage();
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Reset Filters
-    |--------------------------------------------------------------------------
-    */
 
     public function resetFilters(): void
     {
         $this->reset([
-            'search',
-            'governorate_id',
-            'city_id',
-            'email',
-            'gender',
-            'age',
+            'search', 'governorate_id', 'city_id', 'email', 'gender', 'age',
         ]);
 
+        $this->sortField = 'name';
+        $this->sortDirection = 'asc';
+        $this->clearSelected();
         $this->resetPage();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Sorting
-    |--------------------------------------------------------------------------
-    */
-
-    public function sortBy($field): void
+    public function sortBy(string $field): void
     {
-        if ($this->sortField === $field) {
-            $this->sortDirection =
-                $this->sortDirection === 'asc'
-                    ? 'desc'
-                    : 'asc';
-        } else {
-            $this->sortField = $field;
-            $this->sortDirection = 'asc';
-        }
-
-        $this->resetPage();
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | Delete
-    |--------------------------------------------------------------------------
-    */
-
-    public function confirmDelete($userId): void
-    {
-        $this->UserToDelete = $userId;
-        $this->showDeleteModal = true;
-    }
-
-
-    public function deleteUser(): void
-    {
-        if (!$this->UserToDelete) {
+        if (! in_array($field, $this->sortableFields(), true)) {
             return;
         }
 
-        User::find($this->UserToDelete)?->delete();
+        $this->sortDirection = $this->sortField === $field
+            && $this->sortDirection === 'asc' ? 'desc' : 'asc';
 
-        $this->showDeleteModal = false;
-
-        $this->UserToDelete = null;
-
-        session()->flash(
-            'message',
-            'User Deleted Successfully.'
-        );
+        $this->sortField = $field;
+        $this->clearSelected();
+        $this->resetPage();
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Bulk Selection
-    |--------------------------------------------------------------------------
-    */
-
-    public function updateSelectAll($value): void
+    public function clearSelected(): void
     {
-        if ($value) {
-            $this->selected = $this->users
-                ->pluck('id')
-                ->map(fn ($id) => (string) $id)
-                ->toArray();
-        } else {
-            $this->selected = [];
-        }
+        $this->clearBulkSelection();
     }
-
 
     public function bulkDelete(): void
     {
-        if (empty($this->selected)) {
+        $ids = $this->normalizeBulkIds($this->selected);
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one user first.');
+
             return;
         }
 
-        User::whereIn('id', $this->selected)->delete();
+        $count = User::query()->whereIn('id', $ids)->delete();
 
-        $this->selected = [];
+        $this->clearSelected();
+        $this->resetPage();
 
-        $this->selectAll = false;
-
-        session()->flash(
-            'message',
-            'Selected User Deleted Successfully.'
-        );
+        session()->flash('message', $count.' selected user(s) deleted successfully.');
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Export PDF
-    |--------------------------------------------------------------------------
-    */
-
-    public function exportPdf()
+    protected function deleteModel(): string
     {
-        $users = $this->getFilteredUsers();
-
-        $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8',
-            'default_font' => 'dejavusans',
-        ]);
-
-        $html = view(
-            'users.pdf',
-            compact('users')
-        )->render();
-
-        $mpdf->WriteHTML($html);
-
-        return response()->streamDownload(
-            function () use ($mpdf) {
-                echo $mpdf->Output('', 'S');
-            },
-            'users.pdf'
-        );
+        return User::class;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Export Selected PDF
-    |--------------------------------------------------------------------------
-    */
-
-    public function exportSelected()
+    protected function deleteSuccessMessage(): string
     {
-        $users = User::whereIn(
-            'id',
-            $this->selected
-        )->get();
-
-        $pdf = Pdf::loadView(
-            'users.pdf',
-            compact('users')
-        );
-
-        return response()->streamDownload(
-            function () use ($pdf) {
-                echo $pdf->stream();
-            },
-            'users-' . date('Y-m-d') . '.pdf'
-        );
+        return 'User deleted successfully.';
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Export Excel
-    |--------------------------------------------------------------------------
-    */
-
-    public function exportExcel()
+    protected function modelClass(): string
     {
-        return Excel::download(
-            new UserExport($this->getFilteredUsers()),
-            'users-' . date('Y-m-d') . '.xlsx'
-        );
+        return User::class;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Export Selected Excel
-    |--------------------------------------------------------------------------
-    */
-
-    public function exportSelectedExcel()
+    protected function exportClass(): string
     {
-        $users = User::whereIn(
-            'id',
-            $this->selected
-        )->get();
-
-        return Excel::download(
-            new UserExport($users),
-            'users-' . date('Y-m-d') . '.xlsx'
-        );
+        return UserExport::class;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Filtered Users
-    |--------------------------------------------------------------------------
-    */
-
-    public function getFilteredUsers()
+    protected function importClass(): string
     {
-        return User::query()
-
-            ->when(
-                $this->search,
-                fn ($q) => $q->search($this->search)
-            )
-
-            ->when(
-                $this->governorate_id,
-                fn ($q) => $q->where(
-                    'governorate_id',
-                    $this->governorate_id
-                )
-            )
-
-            ->when(
-                $this->city_id,
-                fn ($q) => $q->where(
-                    'city_id',
-                    $this->city_id
-                )
-            )
-
-            ->when(
-                $this->email,
-                fn ($q) => $q->where(
-                    'email',
-                    $this->email
-                )
-            )
-
-            ->when(
-                $this->gender,
-                fn ($q) => $q->where(
-                    'gender',
-                    $this->gender
-                )
-            )
-
-            ->when(
-                $this->age !== '',
-                fn ($q) => $q->where(
-                    'age',
-                    $this->age
-                )
-            )
-
-            ->orderBy(
-                $this->sortField,
-                $this->sortDirection
-            )
-
-            ->get();
+        return UserImport::class;
     }
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Import
-    |--------------------------------------------------------------------------
-    */
-
-    public function import()
+    protected function pdfView(): string
     {
-        $this->validate([
-            'importFile' =>
-                'required|file|mimes:xlsx,xls,csv|max:2048',
-        ]);
+        return 'users.pdf';
+    }
 
-        try {
+    protected function resourceName(): string
+    {
+        return 'users';
+    }
 
-            Excel::import(
-                new UserImport(),
-                $this->importFile
-            );
+    protected function resourceKey(): string
+    {
+        return 'users';
+    }
 
-            session()->flash(
-                'message',
-                'Users imported successfully.'
-            );
-
-            $this->importFile = null;
-
-            return redirect('/users');
-
-        } catch (ValidationException $e) {
-
-            $failures = $e->failures();
-
-            $errors = [];
-
-            foreach ($failures as $failure) {
-
-                $errors[] = [
-                    'row' => $failure->row(),
-                    'attribute' => $failure->attribute(),
-                    'errors' => $failure->errors(),
-                    'values' => $failure->values(),
-                ];
-            }
-
-            Log::warning(
-                'User import validation failed',
-                ['errors' => $errors]
-            );
-
-            session()->flash(
-                'error',
-                'Some rows could not be imported.'
-            );
-
-        } catch (\Throwable $th) {
-
-            Log::error(
-                'Import Error',
-                [
-                    'message' => $th->getMessage(),
-                    'file' => $th->getFile(),
-                    'line' => $th->getLine(),
-                    'trace' => $th->getTraceAsString(),
-                ]
-            );
-
-            session()->flash(
-                'error',
-                $th->getMessage()
-            );
-
-            return redirect('/users');
-        }
+    protected function indexRoute(): string
+    {
+        return 'users.index';
     }
 };

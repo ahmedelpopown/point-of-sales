@@ -3,54 +3,47 @@
 namespace App\Exports;
 
 use App\Models\Product;
+use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
 class ProductsExport implements FromCollection, WithHeadings, WithMapping
 {
-    /**
-    * @return \Illuminate\Support\Collection
-    */
-   protected $products; 
-    public function __construct( $products=null)
-    {
-        $this->products = $products;
-
-    }
-    public function collection()
-    {
-        return $this->products ??Product::all()   ;
+    public function __construct(
+        protected ?Collection $products = null
+    ) {
     }
 
+    public function collection(): Collection
+    {
+        return $this->products ?? Product::query()
+            ->withSum('stocks as current_quantity', 'quantity')
+            ->orderBy('name')
+            ->get();
+    }
 
-
-        public function headings(): array
+    public function headings(): array
     {
         return [
-            
             'name',
             'barcode',
             'status',
             'price',
-            'quantity',       
+            'quantity',
             'description',
-            ];
-            }
+        ];
+    }
 
-
-            public function map($product): array
-            {
-                return [
-                 
-                
-                    $product->name,
-                    $product->barcode,
-                    $product->status,
-                    $product->price,
-                    $product->current_quantity,
-                    $product->description,
-          
-                ];
-            }
+    public function map($product): array
+    {
+        return [
+            $product->name,
+            $product->barcode,
+            $product->status,
+            $product->price,
+            $product->current_quantity,
+            $product->description,
+        ];
+    }
 }

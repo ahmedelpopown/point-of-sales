@@ -20,16 +20,4 @@ trait WithTableManagement
 
         $this->resetPage();
     }
-
-    public function updatedSelectAll($value): void
-    {
-        $this->selected = $value
-            ? $this->tableItems()
-                ->pluck('id')
-                ->map(fn ($id) => (string) $id)
-                ->toArray()
-            : [];
-    }
-
-    abstract protected function tableItems();
 }

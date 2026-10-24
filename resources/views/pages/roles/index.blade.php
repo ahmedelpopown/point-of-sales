@@ -35,6 +35,14 @@
 
     </div>
 
+    @if(count($selected) > 0)
+        <div class="mt-3">
+            <x-ui.bulk-actions :count="count($selected)" item-label="role" items-label="roles">
+                <x-ui.action-button wire:click="clearBulkSelection">Clear selection</x-ui.action-button>
+            </x-ui.bulk-actions>
+        </div>
+    @endif
+
 
     {{-- Roles Table --}}
     <div class="card shadow-sm">
@@ -48,6 +56,15 @@
                     <thead class="table-light">
 
                         <tr>
+
+                            <th class="w-12">
+                                <input
+                                    type="checkbox"
+                                    wire:model.live="selectAll"
+                                    aria-label="Select all roles on this page"
+                                    class="form-check-input"
+                                >
+                            </th>
 
                             <th>#</th>
 
@@ -77,6 +94,16 @@
                         @forelse ($roles as $role)
 
                             <tr>
+
+                                <td>
+                                    <input
+                                        type="checkbox"
+                                        wire:model.live="selected"
+                                        value="{{ $role->id }}"
+                                        aria-label="Select role {{ $role->name }}"
+                                        class="form-check-input"
+                                    >
+                                </td>
 
                                 {{-- ID --}}
                                 <td>
@@ -168,7 +195,7 @@
                             <tr>
 
                                 <td
-                                    colspan="5"
+                                    colspan="6"
                                     class="text-center py-5"
                                 >
 

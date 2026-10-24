@@ -33,7 +33,7 @@ new #[Title('Create User')] class extends Component
     public function updated($property): void
     {
         if ($property === 'form.governorate_id') {
-            $this->form->city_id = null;
+            $this->form->city_id = '';
         }
     }
 
@@ -46,9 +46,8 @@ new #[Title('Create User')] class extends Component
         return $this->redirectRoute('users.index');
     }
 };
-
- 
 ?>
+
 @include('pages.users.form', [
     'title' => 'Create User',
     'subtitle' => 'Create a new user and assign their information.',

@@ -12,7 +12,8 @@
 
     <input
         type="checkbox"
-        wire:model.live="selectPage"
+        wire:model.live="selectAll"
+        aria-label="Select all orders on this page"
         class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
     >
 
@@ -109,7 +110,7 @@
     <input
         type="checkbox"
         value="{{ $order->id }}"
-        wire:model.live="selectedOrders"
+        wire:model.live="selected"
         class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
     >
 

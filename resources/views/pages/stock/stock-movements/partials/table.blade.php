@@ -13,6 +13,15 @@
 
                             <tr>
 
+                                <th class="w-12 px-3 py-3.5">
+                                    <input
+                                        type="checkbox"
+                                        wire:model.live="selectAll"
+                                        aria-label="Select all stock movements on this page"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    >
+                                </th>
+
                                 <th
                                     wire:click="sortBy('product')"
                                     class="cursor-pointer px-3 py-3.5 text-left text-sm font-semibold text-gray-900">
@@ -78,6 +87,16 @@
                                 class="hover:bg-gray-50">
 
                                 <td class="whitespace-nowrap px-3 py-4 text-sm">
+                                    <input
+                                        type="checkbox"
+                                        wire:model.live="selected"
+                                        value="{{ $movement->id }}"
+                                        aria-label="Select stock movement {{ $movement->id }}"
+                                        class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                    >
+                                </td>
+
+                                <td class="whitespace-nowrap px-3 py-4 text-sm">
 
                                     <div class="font-medium text-gray-900">
                                         {{ $movement->product->name }}
@@ -127,7 +146,7 @@
 
                             <tr>
                                 <td
-                                    colspan="8"
+                                    colspan="9"
                                     class="px-3 py-8 text-center text-sm text-gray-500">
                                     No stock movements found.
                                 </td>

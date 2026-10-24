@@ -16,11 +16,19 @@ trait WithDeleteConfirmation
 
     public function deleteItem(): void
     {
-        if (!$this->deleteItemId) {
+        if (! $this->deleteItemId) {
             return;
         }
 
         $this->deleteModel()::find($this->deleteItemId)?->delete();
+
+        if (method_exists($this, 'clearBulkSelection')) {
+            $this->clearBulkSelection();
+
+            if (method_exists($this, 'resetPage')) {
+                $this->resetPage();
+            }
+        }
 
         $this->showDeleteModal = false;
         $this->deleteItemId = null;

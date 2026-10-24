@@ -1,6 +1,7 @@
 <?php
 
 use App\Enums\StockMovementType;
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Models\Employee;
 use App\Models\Shop;
 use App\Models\StockMovement;
@@ -15,6 +16,7 @@ use Livewire\WithPagination;
 
 new #[Title('Stock Movements')] class extends Component
 {
+    use WithBulkSelection;
     use WithPagination;
 
     #[Url(except: '')]
@@ -45,6 +47,11 @@ new #[Title('Stock Movements')] class extends Component
     public string $sortDirection = 'desc';
 
     public int $perPage = 15;
+
+    public function getBulkVisibleIds(): array
+    {
+        return $this->movements->getCollection()->pluck('id')->all();
+    }
 
     #[Computed]
     public function movementTypes(): array
@@ -262,6 +269,7 @@ new #[Title('Stock Movements')] class extends Component
         }
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updated($property): void
@@ -276,6 +284,7 @@ new #[Title('Stock Movements')] class extends Component
             'dateTo',
         ], true)) {
             $this->resetPage();
+            $this->clearBulkSelection();
         }
 
         if ($property === 'locationType') {
@@ -296,6 +305,7 @@ new #[Title('Stock Movements')] class extends Component
         ]);
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function movementTypeName(StockMovement $movement): string
@@ -313,17 +323,14 @@ new #[Title('Stock Movements')] class extends Component
             'PURCHASE',
             'TRANSFER_IN',
             'ADJUSTMENT_IN',
-            'SALE_REVERSAL'
-                => 'bg-green-100 text-green-800',
+            'SALE_REVERSAL' => 'bg-green-100 text-green-800',
 
             'SALE',
             'TRANSFER_OUT',
             'ADJUSTMENT_OUT',
-            'PURCHASE_REVERSAL'
-                => 'bg-red-100 text-red-800',
+            'PURCHASE_REVERSAL' => 'bg-red-100 text-red-800',
 
-            default
-                => 'bg-gray-100 text-gray-800',
+            default => 'bg-gray-100 text-gray-800',
         };
     }
 

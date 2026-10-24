@@ -62,12 +62,28 @@
 
     </div>
 
+    @if(count($selected) > 0)
+        <div class="mt-6">
+            <x-ui.bulk-actions :count="count($selected)" item-label="installment" items-label="installments">
+                <x-ui.action-button wire:click="clearBulkSelection">Clear selection</x-ui.action-button>
+            </x-ui.bulk-actions>
+        </div>
+    @endif
+
     <div class="mt-8 overflow-x-auto rounded-lg bg-white shadow">
 
         <table class="min-w-full divide-y divide-gray-300">
 
             <thead class="bg-gray-50">
                 <tr>
+                    <th class="w-12 px-4 py-3">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selectAll"
+                            aria-label="Select all installments on this page"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        >
+                    </th>
                     <th class="px-4 py-3 text-left text-sm font-semibold">
                         <button wire:click="sortBy('id')" type="button">
                             ID
@@ -123,6 +139,16 @@
 
                 @forelse ($this->installments as $installment)
                     <tr wire:key="installment-{{ $installment->id }}">
+
+                        <td class="whitespace-nowrap px-4 py-4 text-sm">
+                            <input
+                                type="checkbox"
+                                wire:model.live="selected"
+                                value="{{ $installment->id }}"
+                                aria-label="Select installment {{ $installment->id }}"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            >
+                        </td>
 
                         <td class="whitespace-nowrap px-4 py-4 text-sm">
                             #{{ $installment->id }}
@@ -186,7 +212,7 @@
                 @empty
                     <tr>
                         <td
-                            colspan="8"
+                            colspan="9"
                             class="px-4 py-8 text-center text-gray-500"
                         >
                             No installments found.

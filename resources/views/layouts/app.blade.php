@@ -6,7 +6,7 @@
 
 @include('layout.head')
 @include('layout.header')
-@include('layout.nav')
+@include('layouts.partials.navbar')
 @include('layout.sidebar')
 @push('script')
   <script>
@@ -38,11 +38,13 @@
 @endpush('script')
 
 <div class="content-wrapper">
- @include('layouts.partials.control-sidebar')
- 
-  <section class="content">
-  {{ $slot }}
-  </section>
+    <section class="content">
+        @hasSection('content')
+            @yield('content')
+        @else
+            {{ $slot ?? '' }}
+        @endif
+    </section>
 </div>
    @livewireScripts
 @include('layout.footer')

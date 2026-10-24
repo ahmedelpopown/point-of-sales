@@ -2,331 +2,300 @@
 
 use App\Exports\ProductsExport;
 use App\Imports\ProductImport;
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Models\Product;
+use Illuminate\Database\Eloquent\Builder;
 use Livewire\Attributes\Computed;
-use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Maatwebsite\Excel\Facades\Excel;
 
-new #[Title('Products')] class extends Component
+new class extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithBulkSelection;
+    use WithFileUploads, WithPagination;
 
-    public $importFile;
+    public int $lowStockThreshold = 5;
 
-    public $search = '';
-    public $name = '';
-    public $price = '';
-    public $barcode = '';
-    public $status = '';
+    public string $search = '';
 
-    public $sortField = 'name';
-    public $sortDirection = 'asc';
-    public $perPage = 10;
+    public string $status = 'all';
 
-    public $showDeleteModal = false;
-    public $ProductToDelete = null;
+    public bool $lowStockOnly = false;
 
-    public $selected = [];
-    public $selectAll = false;
+    public int $priceFloor = 0;
 
-    protected $queryString = [
-        'search' => ['except' => ''],
-        'name' => ['except' => ''],
-        'barcode' => ['except' => ''],
-        'price' => ['except' => ''],
-        'status' => ['except' => ''],
-        'sortField' => ['except' => 'name'],
-        'sortDirection' => ['except' => 'asc'],
-    ];
+    public int $priceCeiling = 5000;
+
+    public int $minPrice = 0;
+
+    public int $maxPrice = 5000;
+
+    public string $sortField = 'created_at';
+
+    public string $sortDirection = 'desc';
+
+    public int $perPage = 10;
+
+    public $file = null;
+
+    public function mount(): void
+    {
+        $bounds = Product::query()
+            ->selectRaw('MIN(price) as min_price, MAX(price) as max_price')
+            ->first();
+
+        $this->priceFloor = max(
+            0,
+            (int) floor((float) ($bounds?->min_price ?? 0))
+        );
+
+        $this->priceCeiling = max(
+            $this->priceFloor,
+            (int) ceil((float) ($bounds?->max_price ?? 5000))
+        );
+
+        $this->minPrice = $this->priceFloor;
+        $this->maxPrice = $this->priceCeiling;
+    }
 
     #[Computed]
     public function products()
     {
-        return Product::query()
-            ->when(
-                $this->search,
-                fn($q) => $q->search($this->search)
-            )
-            ->when(
-                $this->name,
-                fn($q) => $q->where('name', $this->name)
-            )
-            ->when(
-                $this->barcode,
-                fn($q) => $q->where('barcode', $this->barcode)
-            )
-            ->when(
-                $this->status,
-                fn($q) => $q->where('status', $this->status)
-            )
-
-            // Total stock from all warehouses + shops
-            ->withSum('stocks as current_quantity', 'quantity')
-
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->paginate($this->perPage);
+        return $this->filteredProductsQuery()->paginate($this->perPage);
     }
 
     #[Computed]
-    public function status()
+    public function totalProducts(): int
     {
-        return Product::query()
-            ->distinct()
-            ->pluck('status')
-            ->sort();
+        return $this->filteredProductsQuery()->count();
     }
 
-    public function sortBy($field)
+    private function filteredProductsQuery(): Builder
     {
-        $allowedFields = [
-            'name',
-            'price',
-            'description',
-            'barcode',
-            'status',
-            'current_quantity',
-        ];
+        $query = Product::query()
+            ->withSum('stocks as current_quantity', 'quantity');
 
-        if (!in_array($field, $allowedFields, true)) {
+        if (trim($this->search) !== '') {
+            $like = '%'.trim($this->search).'%';
+
+            $query->where(fn (Builder $q) => $q
+                ->where('name', 'like', $like)
+                ->orWhere('barcode', 'like', $like));
+        }
+
+        $min = max($this->priceFloor, min($this->minPrice, $this->priceCeiling));
+        $max = max($this->priceFloor, min($this->maxPrice, $this->priceCeiling));
+
+        $query->whereBetween('price', [min($min, $max), max($min, $max)]);
+
+        if ($this->status !== 'all') {
+            $query->where('status', $this->status);
+        }
+
+        if ($this->lowStockOnly) {
+            $query->whereRaw(
+                'COALESCE((SELECT SUM(s.quantity) FROM stocks s
+                WHERE s.product_id = products.id), 0) <= ?',
+                [$this->lowStockThreshold]
+            );
+        }
+
+        $allowed = ['name', 'price', 'status', 'created_at'];
+        $direction = $this->sortDirection === 'asc' ? 'asc' : 'desc';
+
+        if ($this->sortField === 'current_quantity') {
+            $query->orderByRaw(
+                '(SELECT COALESCE(SUM(s.quantity), 0) FROM stocks s
+                WHERE s.product_id = products.id) '.$direction
+            );
+        } else {
+            $field = in_array($this->sortField, $allowed, true)
+                ? $this->sortField
+                : 'created_at';
+
+            $query->orderBy($field, $direction);
+        }
+
+        return $query;
+    }
+
+    private function refreshTable(): void
+    {
+        $this->resetPage();
+        $this->clearSelection();
+    }
+
+    public function updatedSearch(): void
+    {
+        $this->refreshTable();
+    }
+
+    public function updatedStatus(): void
+    {
+        $this->refreshTable();
+    }
+
+    public function updatedLowStockOnly(): void
+    {
+        $this->refreshTable();
+    }
+
+    public function updatedPerPage(): void
+    {
+        $this->refreshTable();
+    }
+
+    public function updatedMinPrice($value): void
+    {
+        $this->minPrice = max(
+            $this->priceFloor,
+            min((int) $value, $this->priceCeiling)
+        );
+
+        if ($this->minPrice > $this->maxPrice) {
+            $this->maxPrice = $this->minPrice;
+        }
+
+        $this->refreshTable();
+    }
+
+    public function updatedMaxPrice($value): void
+    {
+        $this->maxPrice = max(
+            $this->priceFloor,
+            min((int) $value, $this->priceCeiling)
+        );
+
+        if ($this->maxPrice < $this->minPrice) {
+            $this->minPrice = $this->maxPrice;
+        }
+
+        $this->refreshTable();
+    }
+
+    public function resetFilters(): void
+    {
+        $this->search = '';
+        $this->status = 'all';
+        $this->lowStockOnly = false;
+        $this->minPrice = $this->priceFloor;
+        $this->maxPrice = $this->priceCeiling;
+
+        $this->refreshTable();
+    }
+
+    public function sortBy(string $field): void
+    {
+        if (! in_array($field, [
+            'name', 'price', 'status', 'created_at', 'current_quantity',
+        ], true)) {
             return;
         }
 
-        if ($this->sortField === $field) {
-            $this->sortDirection =
-                $this->sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            $this->sortField = $field;
-            $this->sortDirection = 'asc';
+        $this->sortDirection = $this->sortField === $field
+            && $this->sortDirection === 'asc' ? 'desc' : 'asc';
+
+        $this->sortField = $field;
+        $this->refreshTable();
+    }
+
+    public function getBulkVisibleIds(): array
+    {
+        return $this->products->getCollection()->pluck('id')->all();
+    }
+
+    public function deleteProduct(int $productId): void
+    {
+        Product::query()->findOrFail($productId)->delete();
+
+        $this->selected = array_values(array_diff(
+            array_map('intval', $this->selected),
+            [$productId]
+        ));
+
+        $this->syncBulkSelection();
+        $this->resetPageIfNeeded();
+
+        session()->flash('success', 'Product deleted successfully.');
+    }
+
+    public function deleteSelected(): void
+    {
+        $ids = $this->normalizeBulkIds($this->selected);
+
+        if (! $ids) {
+            session()->flash('error', 'Select at least one product first.');
+
+            return;
         }
 
-        $this->resetPage();
-    }
+        $count = Product::query()->whereIn('id', $ids)->delete();
 
-    public function updateSearch()
-    {
-        $this->resetPage();
-    }
+        $this->clearSelection();
+        $this->resetPageIfNeeded();
 
-    public function updateStatus()
-    {
-        $this->resetPage();
-    }
-
-    public function resetFilters()
-    {
-        $this->reset([
-            'search',
-            'status',
-            'name',
-            'barcode',
-            'price',
-        ]);
-
-        $this->sortField = 'name';
-        $this->sortDirection = 'asc';
-
-        $this->resetPage();
-    }
-
-    public function confirmDelete($productId)
-    {
-        $this->ProductToDelete = $productId;
-        $this->showDeleteModal = true;
-    }
-
-    public function deleteProduct()
-    {
-        if ($this->ProductToDelete) {
-            Product::find($this->ProductToDelete)?->delete();
-
-            $this->showDeleteModal = false;
-            $this->ProductToDelete = null;
-
-            session()->flash(
-                'message',
-                'Product deleted successfully.'
-            );
-        }
-    }
-
-    public function updateSelectAll($value)
-    {
-        if ($value) {
-            $this->selected = $this->products
-                ->pluck('id')
-                ->map(fn($id) => (string) $id)
-                ->toArray();
-        } else {
-            $this->selected = [];
-        }
-    }
-
-    public function bulkDelete()
-    {
-        Product::whereIn('id', $this->selected)->delete();
-
-        $this->selected = [];
-        $this->selectAll = false;
-
-        session()->flash(
-            'message',
-            'Selected Products Deleted Successfully.'
-        );
-    }
-
-    public function exportPdf()
-    {
-        $products = Product::query()
-            ->when(
-                $this->search,
-                fn($q) => $q->search($this->search)
-            )
-            ->when(
-                $this->name,
-                fn($q) => $q->where('name', $this->name)
-            )
-            ->when(
-                $this->price,
-                fn($q) => $q->where('price', $this->price)
-            )
-            ->when(
-                $this->barcode,
-                fn($q) => $q->where('barcode', $this->barcode)
-            )
-            ->when(
-                $this->status,
-                fn($q) => $q->where('status', $this->status)
-            )
-
-            // Total stock from all locations
-            ->withSum('stocks as current_quantity', 'quantity')
-
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->get();
-
-        $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8',
-            'default_font' => 'dejavusans',
-        ]);
-
-        $html = view('products.pdf', compact('products'))->render();
-
-        $mpdf->WriteHTML($html);
-
-        return response()->streamDownload(
-            function () use ($mpdf) {
-                echo $mpdf->Output('', 'S');
-            },
-            'products.pdf'
-        );
-    }
-
-    public function exportSelected()
-    {
-        $products = Product::query()
-            ->whereIn('id', $this->selected)
-
-            // Important: selected products also need total stock
-            ->withSum('stocks as current_quantity', 'quantity')
-
-            ->get();
-
-        $mpdf = new \Mpdf\Mpdf([
-            'mode' => 'utf-8',
-            'default_font' => 'dejavusans',
-        ]);
-
-        $html = view('products.pdf', compact('products'))->render();
-
-        $mpdf->WriteHTML($html);
-
-        return response()->streamDownload(
-            function () use ($mpdf) {
-                echo $mpdf->Output('', 'S');
-            },
-            'products.pdf'
-        );
-    }
-
-    public function getFilteredProducts()
-    {
-        return Product::query()
-            ->when(
-                $this->search,
-                fn($q) => $q->search($this->search)
-            )
-            ->when(
-                $this->name,
-                fn($q) => $q->where('name', $this->name)
-            )
-            ->when(
-                $this->barcode,
-                fn($q) => $q->where('barcode', $this->barcode)
-            )
-            ->when(
-                $this->status,
-                fn($q) => $q->where('status', $this->status)
-            )
-
-            // Total stock from all warehouses + shops
-            ->withSum('stocks as current_quantity', 'quantity')
-
-            ->orderBy($this->sortField, $this->sortDirection)
-            ->get();
+        session()->flash('success', "$count product(s) deleted successfully.");
     }
 
     public function exportExcel()
     {
         return Excel::download(
-            new ProductsExport($this->getFilteredProducts()),
-            'products-' . date('Y-m-d') . '.xlsx'
+            new ProductsExport($this->filteredProductsQuery()->get()),
+            'products.xlsx'
         );
     }
 
     public function exportSelectedExcel()
     {
+        $ids = $this->normalizeBulkIds($this->selected);
+
+        if (! $ids) {
+            session()->flash('error', 'Select at least one product to export.');
+
+            return null;
+        }
+
         $products = Product::query()
-            ->whereIn('id', $this->selected)
             ->withSum('stocks as current_quantity', 'quantity')
+            ->whereIn('id', $ids)
             ->get();
 
         return Excel::download(
             new ProductsExport($products),
-            'products-' . date('Y-m-d') . '.xlsx'
+            'selected-products.xlsx'
         );
     }
 
-    public function import()
+    public function import(): void
     {
         $this->validate([
-            'importFile' => 'required|file|mimes:xlsx,xls,csv|max:2048',
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:5120',
         ]);
 
-        try {
-            Excel::import(
-                new ProductImport(),
-                $this->importFile
-            );
+        Excel::import(new ProductImport, $this->file->getRealPath());
 
-            session()->flash(
-                'message',
-                'Products imported successfully.'
-            );
+        $this->reset('file');
+        $this->refreshTable();
 
-            $this->importFile = null;
+        session()->flash('success', 'Products imported successfully.');
+    }
 
-            redirect('/products');
-        } catch (\Throwable $th) {
-            session()->flash(
-                'error',
-                'There was an error importing the file: '
-                . $th->getMessage()
-            );
+    public function clearSelected(): void
+    {
+        $this->clearSelection();
+    }
 
-            redirect('/products');
+    private function clearSelection(): void
+    {
+        $this->clearBulkSelection();
+    }
+
+    private function resetPageIfNeeded(): void
+    {
+        if ($this->products->isEmpty() && $this->getPage() > 1) {
+            $this->previousPage();
         }
     }
 };

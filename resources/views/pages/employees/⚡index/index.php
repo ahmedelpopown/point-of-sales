@@ -1,9 +1,11 @@
 <?php
+
+use App\Exports\EmployeeExport;
+use App\Imports\EmployeeImport;
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Livewire\Concerns\WithDeleteConfirmation;
 use App\Livewire\Concerns\WithImportExport;
-use App\Livewire\Concerns\WithTableManagement;
 use App\Models\Employee;
-
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -12,13 +14,13 @@ use Livewire\WithPagination;
 
 new #[Title('Employees')] class extends Component
 {
-  use WithPagination;
-    use WithFileUploads;
-    use WithTableManagement;
+    use WithBulkSelection;
     use WithDeleteConfirmation;
+    use WithFileUploads;
     use WithImportExport;
+    use WithPagination;
 
-    public $importFile;
+    public $importFile = null;
 
     public string $search = '';
 
@@ -31,11 +33,6 @@ new #[Title('Employees')] class extends Component
     public string $sortDirection = 'asc';
 
     public int $perPage = 10;
-
-    public array $selected = [];
-
-    public bool $selectAll = false;
-
 
     /*
     |--------------------------------------------------------------------------
@@ -70,13 +67,6 @@ new #[Title('Employees')] class extends Component
             );
     }
 
-
-    protected function tableItems()
-    {
-        return $this->employees;
-    }
-
-
     #[Computed]
     public function employees()
     {
@@ -84,6 +74,10 @@ new #[Title('Employees')] class extends Component
             ->paginate($this->perPage);
     }
 
+    public function getBulkVisibleIds(): array
+    {
+        return $this->employees->getCollection()->pluck('id')->all();
+    }
 
     #[Computed]
     public function departments()
@@ -100,7 +94,6 @@ new #[Title('Employees')] class extends Component
             ]);
     }
 
-
     #[Computed]
     public function statuses()
     {
@@ -116,7 +109,6 @@ new #[Title('Employees')] class extends Component
         ]);
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Filters
@@ -131,12 +123,31 @@ new #[Title('Employees')] class extends Component
                 'department',
                 'status',
                 'perPage',
-            ])
+            ], true)
         ) {
             $this->resetPage();
+            $this->clearBulkSelection();
         }
     }
 
+    public function sortBy(string $field): void
+    {
+        if (! in_array($field, ['first_name', 'department'], true)) {
+            return;
+        }
+
+        if ($this->sortField === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc'
+                ? 'desc'
+                : 'asc';
+        } else {
+            $this->sortField = $field;
+            $this->sortDirection = 'asc';
+        }
+
+        $this->resetPage();
+        $this->clearBulkSelection();
+    }
 
     public function resetFilters(): void
     {
@@ -147,8 +158,8 @@ new #[Title('Employees')] class extends Component
         ]);
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -161,72 +172,69 @@ new #[Title('Employees')] class extends Component
         return Employee::class;
     }
 
-
     protected function deleteSuccessMessage(): string
     {
         return 'Employee deleted successfully.';
     }
 
-
     public function bulkDelete(): void
     {
-        if (!$this->selected) {
+        $ids = $this->normalizeBulkIds($this->selected);
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one employee first.');
+
             return;
         }
 
-        Employee::whereIn(
-            'id',
-            $this->selected
-        )->delete();
+        $count = Employee::query()->whereIn('id', $ids)->delete();
 
-        $this->selected = [];
-        $this->selectAll = false;
+        $this->clearBulkSelection();
+        $this->resetPage();
 
         session()->flash(
             'message',
-            'Selected employees deleted successfully.'
+            $count.' selected employee(s) deleted successfully.'
         );
     }
-
 
     /*
     |--------------------------------------------------------------------------
     | Export
     |--------------------------------------------------------------------------
     */
-protected function modelClass(): string
-{
-    return Employee::class;
-}
+    protected function modelClass(): string
+    {
+        return Employee::class;
+    }
 
-protected function exportClass(): string
-{
-    return \App\Exports\EmployeeExport::class;
-}
+    protected function exportClass(): string
+    {
+        return EmployeeExport::class;
+    }
 
-protected function importClass(): string
-{
-    return \App\Imports\EmployeeImport::class;
-}
+    protected function importClass(): string
+    {
+        return EmployeeImport::class;
+    }
 
-protected function pdfView(): string
-{
-    return 'employees.pdf';
-}
+    protected function pdfView(): string
+    {
+        return 'employees.pdf';
+    }
 
-protected function resourceName(): string
-{
-    return 'employees';
-}
+    protected function resourceName(): string
+    {
+        return 'employees';
+    }
 
-protected function resourceKey(): string
-{
-    return 'employees';
-}
+    protected function resourceKey(): string
+    {
+        return 'employees';
+    }
 
-protected function indexRoute(): string
-{
-    return 'employees.index';
-}
-    };
-?>
+    protected function indexRoute(): string
+    {
+        return 'employees.index';
+    }
+};

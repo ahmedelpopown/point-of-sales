@@ -2,10 +2,13 @@
 
 use App\Services\EmployeeAuthService;
 use Illuminate\Support\Facades\Auth;
+use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 
-new #[Title('Employee Login')] class extends Component
+new #[Layout('layouts.guest')]
+#[Title('Employee Login')]
+class extends Component
 {
     public string $email = '';
 
@@ -44,18 +47,10 @@ new #[Title('Employee Login')] class extends Component
 };
 ?>
 
-<div class="login-page relative min-h-screen overflow-hidden bg-white">
-    {{-- Soft page accents --}}
-    <div aria-hidden="true" class="login-orb login-orb--one pointer-events-none absolute -left-28 -top-28 h-80 w-80 rounded-full bg-indigo-200/40 blur-3xl"></div>
-    <div aria-hidden="true" class="login-orb login-orb--two pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-blue-200/40 blur-3xl"></div>
-
-    <main class="login-layout relative min-h-screen w-full bg-white">
+<div class="login-page min-h-screen bg-slate-50">
+    <main class="login-layout min-h-screen w-full">
         {{-- Branding panel --}}
-        <section class="login-brand-panel relative isolate flex min-w-0 min-h-[250px] flex-col justify-between overflow-hidden bg-gradient-to-br from-slate-950 via-indigo-950 to-indigo-800 px-6 py-6 text-white sm:px-10 sm:py-8 lg:min-h-[100svh] lg:px-10 lg:py-9 xl:px-16 xl:py-10">
-            <div aria-hidden="true" class="absolute -right-24 -top-20 -z-10 h-72 w-72 rounded-full border-[46px] border-white/[0.06]"></div>
-            <div aria-hidden="true" class="absolute -bottom-28 -left-20 -z-10 h-80 w-80 rounded-full bg-blue-400/10 blur-2xl"></div>
-            <div aria-hidden="true" class="absolute inset-0 -z-10 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.45)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.45)_1px,transparent_1px)] [background-size:34px_34px]"></div>
-
+        <section class="login-brand-panel flex min-w-0 flex-col justify-between bg-slate-950 px-6 py-5 text-white sm:px-10 sm:py-8 lg:px-12 lg:py-10">
             <div class="login-brand-logo flex items-center gap-3">
                 <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-indigo-950 shadow-lg shadow-black/10">
                     <svg class="h-7 w-7" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -69,43 +64,22 @@ new #[Title('Employee Login')] class extends Component
                 </div>
             </div>
 
-            <div class="login-brand-content mt-8 max-w-md lg:mx-auto lg:mt-0 lg:w-full lg:max-w-lg lg:py-2">
-                <div class="mb-5 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/[0.07] px-3.5 py-2 text-xs font-medium text-indigo-100 backdrop-blur-sm">
-                    <span class="h-2 w-2 rounded-full bg-emerald-400 ring-4 ring-emerald-400/15"></span>
-                    Your workspace, all in one place
-                </div>
-                <h2 class="max-w-sm text-3xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-[42px]">
-                    Everything your business needs. <span class="text-indigo-300">One workspace.</span>
+            <div class="login-brand-content mt-5 max-w-md lg:mx-auto lg:mt-0 lg:w-full lg:max-w-lg lg:py-2">
+                <h2 class="max-w-sm text-2xl font-bold leading-tight tracking-tight sm:text-4xl lg:text-[42px]">
+                    Your business, <span class="text-indigo-300">in one workspace.</span>
                 </h2>
-                <p class="mt-5 max-w-sm text-sm leading-7 text-indigo-100/75 sm:text-base">
-                    Sign in to manage sales, keep track of stock, and stay on top of daily operations.
+                <p class="mt-3 max-w-sm text-sm leading-6 text-slate-300 sm:text-base sm:leading-7">
+                    Sign in to manage sales, stock, and daily operations.
                 </p>
-
-                <div class="login-feature-grid mt-7 max-w-lg grid-cols-2 gap-3">
-                    <div class="login-feature-card rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-indigo-200">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 19V5m0 14h16M7 15l4-4 3 2 5-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        </div>
-                        <p class="mt-3 text-sm font-semibold">Sales overview</p>
-                        <p class="mt-1 text-xs leading-5 text-indigo-100/65">See your business at a glance.</p>
-                    </div>
-                    <div class="login-feature-card rounded-2xl border border-white/10 bg-white/[0.07] p-4 backdrop-blur-sm">
-                        <div class="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-indigo-200">
-                            <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7.5 12 3l8 4.5v9L12 21l-8-4.5v-9Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M4.5 7.8 12 12l7.5-4.2M12 12v8.5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                        </div>
-                        <p class="mt-3 text-sm font-semibold">Stock control</p>
-                        <p class="mt-1 text-xs leading-5 text-indigo-100/65">Keep products organized.</p>
-                    </div>
-                </div>
             </div>
 
-            <p class="mt-8 text-xs text-indigo-100/50 lg:mt-0">A simpler way to run your day.</p>
+            <p class="mt-5 hidden text-xs text-slate-400 lg:block">A simpler way to run your day.</p>
         </section>
 
         {{-- Login form --}}
-        <section class="login-form-panel relative z-10 flex min-w-0 min-h-[560px] items-center justify-center px-6 py-8 sm:px-10 sm:py-9 lg:min-h-[100svh] lg:px-10 lg:py-8 xl:px-16 2xl:px-20">
+        <section class="login-form-panel flex min-w-0 items-center justify-center bg-white px-6 py-8 sm:px-10 sm:py-9 lg:px-12 lg:py-8 xl:px-16">
             <div class="login-form-content w-full max-w-md lg:max-w-lg">
-                <div class="mb-6">
+                <div class="mb-5">
                     <p class="text-xs font-bold uppercase tracking-[0.2em] text-indigo-600">Employee sign in</p>
                     <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-900 sm:text-[34px]">Welcome back</h1>
                     <p class="mt-1.5 text-sm leading-6 text-slate-500">Enter your account details to access your workspace.</p>
@@ -141,20 +115,35 @@ new #[Title('Employee Login')] class extends Component
                         <div class="mb-2 flex items-center justify-between gap-3">
                             <label for="password" class="block text-sm font-semibold text-slate-700">Password</label>
                         </div>
-                        <div class="group relative">
+                        <div class="group relative" x-data="{ showPassword: false }">
                             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 transition group-focus-within:text-indigo-600">
                                 <svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="5" y="10" width="14" height="10.5" rx="2.5" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 14v2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
                             </div>
                             <input
                                 id="password"
-                                type="password"
+                                :type="showPassword ? 'text' : 'password'"
                                 wire:model="password"
                                 autocomplete="current-password"
                                 placeholder="Enter your password"
                                 aria-invalid="{{ $errors->has('password') ? 'true' : 'false' }}"
                                 aria-describedby="password-error"
-                                class="login-input block w-full rounded-xl border bg-slate-50/70 py-3 pl-12 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-4 {{ $errors->has('password') ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100' }}"
+                                class="login-input block w-full rounded-xl border bg-slate-50/70 py-3 pl-12 pr-12 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:bg-white focus:ring-4 {{ $errors->has('password') ? 'border-red-300 focus:border-red-400 focus:ring-red-100' : 'border-slate-200 focus:border-indigo-500 focus:ring-indigo-100' }}"
                             >
+                            <button
+                                type="button"
+                                @click="showPassword = !showPassword"
+                                :aria-label="showPassword ? 'Hide password' : 'Show password'"
+                                class="absolute inset-y-0 right-0 flex items-center px-4 text-slate-400 transition hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                            >
+                                <svg x-show="!showPassword" class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" stroke="currentColor" stroke-width="1.7"/>
+                                    <circle cx="12" cy="12" r="2.5" stroke="currentColor" stroke-width="1.7"/>
+                                </svg>
+                                <svg x-show="showPassword" x-cloak class="h-5 w-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                                    <path d="m3 3 18 18M10.6 6.2A10.8 10.8 0 0 1 12 6c6.1 0 9.5 6 9.5 6a15.4 15.4 0 0 1-3 3.4M6.2 6.7C3.8 8.2 2.5 12 2.5 12s3.4 6 9.5 6c1 0 1.9-.2 2.7-.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                </svg>
+                            </button>
                         </div>
                         @error('password')
                             <p id="password-error" role="alert" class="mt-2 flex items-start gap-1.5 text-sm text-red-600">
@@ -204,165 +193,31 @@ new #[Title('Employee Login')] class extends Component
 
 
 <style>
-    .login-page {
-        isolation: isolate;
-    }
-
-    /* Use plain CSS for the main layout so it does not depend on Tailwind's
-       responsive-class generation. Mobile stacks; desktop uses exact halves. */
     .login-layout {
-        display: grid !important;
-        grid-template-columns: minmax(0, 1fr) !important;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
         align-items: stretch;
     }
 
     .login-brand-panel,
     .login-form-panel {
-        display: flex;
-        width: auto !important;
         min-width: 0;
-        max-width: none;
-        opacity: 1;
-    }
-
-    .login-feature-grid {
-        display: none;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
     @media screen and (min-width: 1024px) {
         .login-layout {
-            grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
-            min-height: 100vh;
-            min-height: 100svh;
+            grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr);
         }
 
         .login-brand-panel,
         .login-form-panel {
-            min-height: 100vh;
             min-height: 100svh;
-        }
-
-        .login-feature-grid {
-            display: grid !important;
         }
     }
 
-    @media screen and (max-width: 1023.98px) {
+    @media screen and (max-width: 1023px) {
         .login-brand-panel {
-            min-height: 250px;
-        }
-
-        .login-form-panel {
-            min-height: 560px;
-        }
-    }
-
-    .login-brand-panel {
-        animation: login-panel-in-left 700ms cubic-bezier(.22, 1, .36, 1) both;
-    }
-
-    .login-form-panel {
-        animation: login-panel-in-right 700ms cubic-bezier(.22, 1, .36, 1) 100ms both;
-    }
-
-    /* Keep the panels visible if animations are unavailable or interrupted. */
-    @supports not (animation-name: login-panel-in-left) {
-        .login-brand-panel,
-        .login-form-panel,
-        .login-brand-logo,
-        .login-brand-content,
-        .login-form-content {
-            opacity: 1;
-            transform: none;
-        }
-    }
-
-    .login-brand-logo {
-        animation: login-fade-up 650ms cubic-bezier(.22, 1, .36, 1) 180ms both;
-    }
-
-    .login-brand-content {
-        animation: login-fade-up 750ms cubic-bezier(.22, 1, .36, 1) 260ms both;
-    }
-
-    .login-form-content {
-        animation: login-fade-up 750ms cubic-bezier(.22, 1, .36, 1) 220ms both;
-    }
-
-    .login-orb--one {
-        animation: login-orb-drift 12s ease-in-out infinite alternate;
-    }
-
-    .login-orb--two {
-        animation: login-orb-drift 15s ease-in-out 1s infinite alternate-reverse;
-    }
-
-    .login-feature-card {
-        transition: transform 220ms ease, border-color 220ms ease, background-color 220ms ease;
-    }
-
-    .login-feature-card:hover {
-        transform: translateY(-4px);
-        border-color: rgb(255 255 255 / 22%);
-        background-color: rgb(255 255 255 / 10%);
-    }
-
-    .login-input {
-        transition: border-color 180ms ease, background-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
-    }
-
-    .login-input:focus {
-        transform: translateY(-1px);
-    }
-
-    .login-submit {
-        transition: transform 180ms ease, box-shadow 180ms ease, background-color 180ms ease;
-    }
-
-    .login-submit:not(:disabled):hover {
-        transform: translateY(-2px);
-    }
-
-    .login-submit:not(:disabled):active {
-        transform: translateY(0) scale(.99);
-    }
-
-    @keyframes login-panel-in-left {
-        from { opacity: 0; transform: translateX(-22px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-
-    @keyframes login-panel-in-right {
-        from { opacity: 0; transform: translateX(22px); }
-        to { opacity: 1; transform: translateX(0); }
-    }
-
-    @keyframes login-fade-up {
-        from { opacity: 0; transform: translateY(14px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    @keyframes login-orb-drift {
-        from { transform: translate3d(0, 0, 0) scale(1); }
-        to { transform: translate3d(20px, -14px, 0) scale(1.05); }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-        .login-brand-panel,
-        .login-form-panel,
-        .login-brand-logo,
-        .login-brand-content,
-        .login-form-content,
-        .login-orb--one,
-        .login-orb--two {
-            animation: none !important;
-        }
-
-        .login-feature-card,
-        .login-input,
-        .login-submit {
-            transition: none !important;
+            min-height: 160px;
         }
     }
 </style>

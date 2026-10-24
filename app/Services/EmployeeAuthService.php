@@ -7,11 +7,7 @@ use Illuminate\Validation\ValidationException;
 
 class EmployeeAuthService
 {
-    public function login(
-        string $email,
-        string $password,
-        bool $remember = false
-    ): void {
+    public function login(string $email,string $password,bool $remember = false): void {
         $credentials = [
             'email' => $email,
             'password' => $password,

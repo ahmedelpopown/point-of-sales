@@ -8,6 +8,15 @@
 
                 <tr>
 
+                    <th class="w-12 px-4 py-4">
+                        <input
+                            type="checkbox"
+                            wire:model.live="selectAll"
+                            aria-label="Select all stock records on this page"
+                            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        >
+                    </th>
+
                     <th
                         wire:click="sortBy('product')"
                         class="cursor-pointer px-4 py-4 text-left text-sm font-semibold text-gray-900"
@@ -67,6 +76,16 @@
                     >
 
                         <td class="px-4 py-4">
+                            <input
+                                type="checkbox"
+                                wire:model.live="selected"
+                                value="{{ $stock->id }}"
+                                aria-label="Select stock record {{ $stock->id }}"
+                                class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            >
+                        </td>
+
+                        <td class="px-4 py-4">
 
                             <div class="text-sm font-semibold text-gray-900">
                                 {{ $stock->product->name }}
@@ -111,7 +130,7 @@
                     <tr>
 
                         <td
-                            colspan="6"
+                            colspan="7"
                             class="px-4 py-12 text-center text-sm text-gray-500"
                         >
                             No stock records found.

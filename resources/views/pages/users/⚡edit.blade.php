@@ -39,7 +39,7 @@ new #[Title('Edit User')] class extends Component
     public function updated($property): void
     {
         if ($property === 'form.governorate_id') {
-            $this->form->city_id = null;
+            $this->form->city_id = '';
         }
     }
 
@@ -52,9 +52,8 @@ new #[Title('Edit User')] class extends Component
         return $this->redirectRoute('users.index');
     }
 };
-
- 
 ?>
+
 @include('pages.users.form', [
     'title' => 'Edit User',
     'subtitle' => 'Update the user account and personal information.',

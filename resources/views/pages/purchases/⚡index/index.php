@@ -2,22 +2,25 @@
 
 use App\Exports\PurchaseExport;
 use App\Imports\PurchaseImport;
+use App\Livewire\Concerns\WithBulkSelection;
 use App\Models\Employee;
 use App\Models\Product;
 use App\Models\Purchase;
 use App\Models\Supplier;
 use App\Models\Warehouse;
+use App\Services\PurchaseService;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
-
 use Maatwebsite\Excel\Facades\Excel;
+
 new #[Title('Purchases')] class extends Component
 {
-    use WithPagination, WithFileUploads;
+    use WithBulkSelection, WithFileUploads, WithPagination;
 
     public $importFile = null;
 
@@ -45,6 +48,11 @@ new #[Title('Purchases')] class extends Component
 
     public int $perPage = 10;
 
+    public function getBulkVisibleIds(): array
+    {
+        return $this->purchases->getCollection()->pluck('id')->all();
+    }
+
     protected $queryString = [
         'search' => ['except' => ''],
         'supplier_id' => ['except' => ''],
@@ -58,7 +66,6 @@ new #[Title('Purchases')] class extends Component
         'sortField' => ['except' => 'created_at'],
         'sortDirection' => ['except' => 'desc'],
     ];
-
 
     /*
     |--------------------------------------------------------------------------
@@ -74,7 +81,6 @@ new #[Title('Purchases')] class extends Component
             ->get();
     }
 
-
     #[Computed]
     public function employees()
     {
@@ -82,7 +88,6 @@ new #[Title('Purchases')] class extends Component
             ->orderBy('first_name')
             ->get();
     }
-
 
     #[Computed]
     public function warehouses()
@@ -92,7 +97,6 @@ new #[Title('Purchases')] class extends Component
             ->get();
     }
 
-
     #[Computed]
     public function products()
     {
@@ -100,7 +104,6 @@ new #[Title('Purchases')] class extends Component
             ->orderBy('name')
             ->get();
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -119,7 +122,6 @@ new #[Title('Purchases')] class extends Component
             ])
             ->withCount('purchaseItems');
 
-
         /*
         |--------------------------------------------------------------------------
         | Search
@@ -130,7 +132,7 @@ new #[Title('Purchases')] class extends Component
             trim($this->search) !== '',
             function ($query) {
 
-                $search = '%' . trim($this->search) . '%';
+                $search = '%'.trim($this->search).'%';
 
                 $query->where(function ($q) use ($search) {
 
@@ -204,7 +206,6 @@ new #[Title('Purchases')] class extends Component
             }
         );
 
-
         /*
         |--------------------------------------------------------------------------
         | Supplier
@@ -213,13 +214,11 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->supplier_id,
-            fn ($query) =>
-                $query->where(
-                    'supplier_id',
-                    $this->supplier_id
-                )
+            fn ($query) => $query->where(
+                'supplier_id',
+                $this->supplier_id
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -229,13 +228,11 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->employee_id,
-            fn ($query) =>
-                $query->where(
-                    'employee_id',
-                    $this->employee_id
-                )
+            fn ($query) => $query->where(
+                'employee_id',
+                $this->employee_id
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -245,13 +242,11 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->warehouse_id,
-            fn ($query) =>
-                $query->where(
-                    'warehouse_id',
-                    $this->warehouse_id
-                )
+            fn ($query) => $query->where(
+                'warehouse_id',
+                $this->warehouse_id
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -261,17 +256,14 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->product_id,
-            fn ($query) =>
-                $query->whereHas(
-                    'purchaseItems',
-                    fn ($itemQuery) =>
-                        $itemQuery->where(
-                            'product_id',
-                            $this->product_id
-                        )
+            fn ($query) => $query->whereHas(
+                'purchaseItems',
+                fn ($itemQuery) => $itemQuery->where(
+                    'product_id',
+                    $this->product_id
                 )
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -281,14 +273,12 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->date_from,
-            fn ($query) =>
-                $query->whereDate(
-                    'created_at',
-                    '>=',
-                    $this->date_from
-                )
+            fn ($query) => $query->whereDate(
+                'created_at',
+                '>=',
+                $this->date_from
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -298,14 +288,12 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->date_to,
-            fn ($query) =>
-                $query->whereDate(
-                    'created_at',
-                    '<=',
-                    $this->date_to
-                )
+            fn ($query) => $query->whereDate(
+                'created_at',
+                '<=',
+                $this->date_to
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -315,14 +303,12 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->total_min !== '',
-            fn ($query) =>
-                $query->where(
-                    'total_price',
-                    '>=',
-                    (float) $this->total_min
-                )
+            fn ($query) => $query->where(
+                'total_price',
+                '>=',
+                (float) $this->total_min
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -332,14 +318,12 @@ new #[Title('Purchases')] class extends Component
 
         $query->when(
             $this->total_max !== '',
-            fn ($query) =>
-                $query->where(
-                    'total_price',
-                    '<=',
-                    (float) $this->total_max
-                )
+            fn ($query) => $query->where(
+                'total_price',
+                '<=',
+                (float) $this->total_max
+            )
         );
-
 
         /*
         |--------------------------------------------------------------------------
@@ -355,7 +339,6 @@ new #[Title('Purchases')] class extends Component
         return $query;
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Purchases
@@ -367,7 +350,6 @@ new #[Title('Purchases')] class extends Component
     {
         $paginator = $this->filteredQuery()
             ->paginate($this->perPage);
-
 
         $paginator->through(
             function ($purchase) {
@@ -396,7 +378,6 @@ new #[Title('Purchases')] class extends Component
         return $paginator;
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Sorting
@@ -411,7 +392,7 @@ new #[Title('Purchases')] class extends Component
             'created_at',
         ];
 
-        if (!in_array($field, $allowedFields, true)) {
+        if (! in_array($field, $allowedFields, true)) {
             return;
         }
 
@@ -430,8 +411,8 @@ new #[Title('Purchases')] class extends Component
         }
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -442,48 +423,62 @@ new #[Title('Purchases')] class extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedSupplierId(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedEmployeeId(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedWarehouseId(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedProductId(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedDateFrom(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedDateTo(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedTotalMin(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
     public function updatedTotalMax(): void
     {
         $this->resetPage();
+        $this->clearBulkSelection();
     }
 
+    public function updatedPerPage(): void
+    {
+        $this->resetPage();
+        $this->clearBulkSelection();
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -509,8 +504,8 @@ new #[Title('Purchases')] class extends Component
         $this->sortDirection = 'desc';
 
         $this->resetPage();
+        $this->clearBulkSelection();
     }
-
 
     /*
     |--------------------------------------------------------------------------
@@ -531,10 +526,35 @@ new #[Title('Purchases')] class extends Component
 
         return Excel::download(
             new PurchaseExport($purchases),
-            'purchases-' . now()->format('Y-m-d') . '.xlsx'
+            'purchases-'.now()->format('Y-m-d').'.xlsx'
         );
     }
 
+    public function exportSelectedExcel()
+    {
+        $ids = $this->normalizeBulkIds($this->selected);
+
+        if ($ids === []) {
+            session()->flash('error', 'Select at least one purchase to export.');
+
+            return null;
+        }
+
+        $purchases = Purchase::query()
+            ->with([
+                'supplier:id,name',
+                'employee:id,first_name,last_name',
+                'warehouse:id,name',
+                'purchaseItems.product:id,name',
+            ])
+            ->whereIn('id', $ids)
+            ->get();
+
+        return Excel::download(
+            new PurchaseExport($purchases),
+            'selected-purchases-'.now()->format('Y-m-d').'.xlsx'
+        );
+    }
 
     /*
     |--------------------------------------------------------------------------
@@ -556,7 +576,7 @@ new #[Title('Purchases')] class extends Component
         try {
 
             Excel::import(
-                new PurchaseImport(),
+                new PurchaseImport,
                 $this->importFile
             );
 
@@ -569,7 +589,7 @@ new #[Title('Purchases')] class extends Component
                 'Purchases imported successfully.'
             );
 
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
 
             $messages = collect($e->errors())
                 ->flatten()
@@ -580,7 +600,7 @@ new #[Title('Purchases')] class extends Component
                 $messages
             );
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
 
             Log::error(
                 'Purchase Import Error',
@@ -598,7 +618,6 @@ new #[Title('Purchases')] class extends Component
         }
     }
 
-
     /*
     |--------------------------------------------------------------------------
     | Delete
@@ -607,7 +626,7 @@ new #[Title('Purchases')] class extends Component
 
     public function deletePurchase(
         int $purchaseId,
-        \App\Services\PurchaseService $purchaseService
+        PurchaseService $purchaseService
     ): void {
 
         try {
@@ -617,13 +636,19 @@ new #[Title('Purchases')] class extends Component
             );
 
             $purchaseService->delete($purchase);
+            $this->selected = array_values(array_diff(
+                $this->selected,
+                [$purchaseId]
+            ));
+            $this->syncBulkSelection();
+            $this->resetPage();
 
             session()->flash(
                 'message',
                 'Purchase deleted successfully.'
             );
 
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
 
             report($e);
 
@@ -634,4 +659,3 @@ new #[Title('Purchases')] class extends Component
         }
     }
 };
-?>

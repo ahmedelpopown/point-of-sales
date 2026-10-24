@@ -23,6 +23,14 @@
         'shops' => $this->shops,
     ])
 
+        @if(count($selected) > 0)
+            <div class="mt-6">
+                <x-ui.bulk-actions :count="count($selected)" item-label="stock movement" items-label="stock movements">
+                    <x-ui.action-button wire:click="clearBulkSelection">Clear selection</x-ui.action-button>
+                </x-ui.bulk-actions>
+            </div>
+        @endif
+
  @include('pages.stock.stock-movements.partials.table', [
     'movements' => $this->movements,
     'sortField' => $sortField,

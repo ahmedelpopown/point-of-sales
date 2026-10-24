@@ -1,11 +1,11 @@
-@if(count($selectedOrders))
+@if(count($selected))
 
     <div class="mt-6 flex flex-col gap-3 rounded-xl border border-indigo-100 bg-indigo-50 p-4 sm:flex-row sm:items-center sm:justify-between">
 
         <div>
             <p class="text-sm font-semibold text-indigo-900">
-                {{ count($selectedOrders) }}
-                {{ count($selectedOrders) === 1 ? 'order' : 'orders' }}
+                {{ count($selected) }}
+                {{ count($selected) === 1 ? 'order' : 'orders' }}
                 selected
             </p>
 
